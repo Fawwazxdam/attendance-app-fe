@@ -19,7 +19,9 @@ export default function TeachersPage() {
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [formData, setFormData] = useState({
     user_id: '',
-    nip: '',
+    fullname: '',
+    phone_number: '',
+    address: '',
     subject: '',
     hire_date: ''
   });
@@ -47,14 +49,17 @@ export default function TeachersPage() {
     e.preventDefault();
     try {
       if (editingTeacher) {
-        // Assuming PUT /teachers/{id} exists
-        await api.put(`/teachers/${editingTeacher.id}`, formData);
+        await api.put(`/teachers/${editingTeacher.id}`, {
+          fullname: formData.fullname,
+          phone_number: formData.phone_number,
+          address: formData.address
+        });
       } else {
         await api.post('/teachers', formData);
       }
       setShowModal(false);
       setEditingTeacher(null);
-      setFormData({ user_id: '', nip: '', subject: '', hire_date: '' });
+      setFormData({ user_id: '', fullname: '', phone_number: '', address: '', subject: '', hire_date: '' });
       fetchData();
     } catch (error) {
       console.error('Error saving teacher:', error);
@@ -65,7 +70,9 @@ export default function TeachersPage() {
     setEditingTeacher(teacher);
     setFormData({
       user_id: teacher.user_id,
-      nip: teacher.nip,
+      fullname: teacher.fullname,
+      phone_number: teacher.phone_number,
+      address: teacher.address,
       subject: teacher.subject,
       hire_date: teacher.hire_date
     });
@@ -85,7 +92,7 @@ export default function TeachersPage() {
 
   const openCreateModal = () => {
     setEditingTeacher(null);
-    setFormData({ user_id: '', nip: '', subject: '', hire_date: '' });
+    setFormData({ user_id: '', fullname: '', phone_number: '', address: '', subject: '', hire_date: '' });
     setShowModal(true);
   };
 
@@ -112,7 +119,7 @@ export default function TeachersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Teachers Management</h1>
           <button
             onClick={openCreateModal}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center space-x-2"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
           >
             <Plus className="h-4 w-4" />
             <span>Add Teacher</span>
@@ -121,8 +128,9 @@ export default function TeachersPage() {
 
         <DataTable
           columns={[
-            { header: 'Name', render: (teacher) => getUserName(teacher.user_id) },
-            { header: 'NIP', key: 'nip' },
+            { header: 'Full Name', key: 'fullname' },
+            { header: 'Phone Number', key: 'phone_number' },
+            { header: 'Address', key: 'address' },
             { header: 'Subject', key: 'subject' },
             { header: 'Hire Date', key: 'hire_date' },
           ]}
@@ -131,13 +139,13 @@ export default function TeachersPage() {
             <>
               <button
                 onClick={() => handleEdit(teacher)}
-                className="text-indigo-600 hover:text-indigo-900 mr-4"
+                className="text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
               >
                 <Edit className="h-4 w-4" />
               </button>
               <button
                 onClick={() => handleDelete(teacher.id)}
-                className="text-red-600 hover:text-red-900"
+                className="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -151,46 +159,70 @@ export default function TeachersPage() {
           title={editingTeacher ? 'Edit Teacher' : 'Add New Teacher'}
         >
           <form onSubmit={handleSubmit}>
+                  {!editingTeacher && (
+                    <>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700">User</label>
+                        <select
+                          value={formData.user_id}
+                          onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          required
+                        >
+                          <option value="">Select User</option>
+                          {users.filter(u => !u.teacher && !u.student).map((user) => (
+                            <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700">Subject</label>
+                        <input
+                          type="text"
+                          value={formData.subject}
+                          onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          required
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700">Hire Date</label>
+                        <input
+                          type="date"
+                          value={formData.hire_date}
+                          onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">User</label>
-                    <select
-                      value={formData.user_id}
-                      onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      required
-                    >
-                      <option value="">Select User</option>
-                      {users.filter(u => !u.teacher && !u.student).map((user) => (
-                        <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">NIP</label>
+                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
                     <input
                       type="text"
-                      value={formData.nip}
-                      onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
+                      value={formData.fullname}
+                      onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       required
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Subject</label>
+                    <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                     <input
                       type="text"
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       required
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Hire Date</label>
+                    <label className="block text-sm font-medium text-gray-700">Address</label>
                     <input
-                      type="date"
-                      value={formData.hire_date}
-                      onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       required
                     />
@@ -199,13 +231,13 @@ export default function TeachersPage() {
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 active:bg-gray-300 transform hover:scale-105 transition-all duration-200"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
                     >
                       {editingTeacher ? 'Update' : 'Create'}
                     </button>
