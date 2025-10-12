@@ -16,10 +16,15 @@ import {
   Upload,
 } from "lucide-react";
 import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function AttendancePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [attendanceData, setAttendanceData] = useState(null);
   const [alreadyAttended, setAlreadyAttended] = useState(false);
@@ -50,16 +55,21 @@ export default function AttendancePage() {
       try {
         const today = new Date().toISOString().split("T")[0];
         const response = await api.get(`/attendances?date=${today}`);
-        if (response.data.attendance) {
-          setAttendanceData(response.data.attendance);
+        // Handle both response formats: attendance (students) and attendances (admins)
+        const attendance = response.data.attendance || (response.data.attendances && response.data.attendances[0]);
+        if (attendance) {
+          setAttendanceData(attendance);
           setAlreadyAttended(true);
-          setAttendanceTime(new Date(response.data.attendance.created_at));
+          setAttendanceTime(new Date(attendance.created_at));
         }
       } catch (error) {
         // If no attendance found, that's fine
         if (error.response?.status !== 404) {
           console.error("Error fetching today's attendance:", error);
+          toast.error("Gagal memuat data absensi hari ini");
         }
+      } finally {
+        setPageLoading(false);
       }
     };
 
@@ -231,27 +241,107 @@ const handleSubmit = async (e) => {
     console.error("Error status:", error.response?.status);
 
     if (error.response?.status === 409) {
-      alert("Anda sudah absen hari ini");
+      toast.error("Anda sudah absen hari ini");
     } else if (error.response?.status === 404) {
-      alert("Data siswa tidak ditemukan");
+      toast.error("Data siswa tidak ditemukan");
     } else if (error.response?.status === 422) {
       const errorMsg = error.response?.data?.message || "Validasi gagal";
       const errors = error.response?.data?.errors;
       if (errors) {
-        const errorList = Object.values(errors).flat().join("\n");
-        alert(`${errorMsg}\n${errorList}`);
+        const errorList = Object.values(errors).flat().join(", ");
+        toast.error(`${errorMsg}: ${errorList}`);
       } else {
-        alert(errorMsg);
+        toast.error(errorMsg);
       }
     } else if (error.response?.status === 500) {
-      alert("Terjadi kesalahan server. Silakan coba lagi atau hubungi administrator.");
+      toast.error("Terjadi kesalahan server. Silakan coba lagi atau hubungi administrator.");
     } else {
-      alert("Gagal mengirim absensi. Silakan coba lagi.");
+      toast.error("Gagal mengirim absensi. Silakan coba lagi.");
     }
   } finally {
     setLoading(false);
   }
 };
+
+  if (pageLoading) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="px-4 py-6 sm:px-0">
+            <div className="max-w-4xl mx-auto">
+              {/* Header Skeleton */}
+              <div className="mb-8 text-center">
+                <Skeleton height={48} width={300} className="mx-auto mb-3" />
+                <Skeleton height={24} width={250} className="mx-auto" />
+                <Skeleton height={6} width={96} className="mx-auto mt-4 rounded-full" />
+              </div>
+
+              {/* Time Display Skeleton */}
+              <div className="bg-blue-50 rounded-xl p-6 mb-8 border border-blue-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Skeleton circle height={48} width={48} />
+                    <div>
+                      <Skeleton height={24} width={120} />
+                      <Skeleton height={18} width={150} />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Skeleton height={16} width={100} />
+                    <Skeleton height={20} width={120} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Form Skeleton */}
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="bg-blue-600 p-6">
+                    <Skeleton height={24} width={200} />
+                    <Skeleton height={16} width={150} className="mt-2" />
+                  </div>
+                  <div className="p-6">
+                    <Skeleton height={20} width={120} className="mb-2" />
+                    <Skeleton height={48} width="100%" className="mb-6 rounded-lg" />
+                    <Skeleton height={20} width={100} className="mb-2" />
+                    <div className="flex space-x-2 mb-6">
+                      <Skeleton height={48} width="50%" />
+                      <Skeleton height={48} width="50%" />
+                    </div>
+                    <Skeleton height={48} width="100%" />
+                  </div>
+                </div>
+
+                {/* Info Card Skeleton */}
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="bg-purple-600 p-6">
+                    <Skeleton height={24} width={180} />
+                    <Skeleton height={16} width={130} className="mt-2" />
+                  </div>
+                  <div className="p-6">
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="flex items-start space-x-3">
+                          <Skeleton circle height={20} width={20} />
+                          <div>
+                            <Skeleton height={18} width={80} />
+                            <Skeleton height={14} width={120} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <Skeleton height={14} width="100%" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
 
   if (loading && !submitted) {
     return (
@@ -270,17 +360,17 @@ const handleSubmit = async (e) => {
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-8 text-center">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-3">
+              <h1 className="text-4xl font-bold text-purple-600 mb-3">
                 Absensi Harian
               </h1>
               <p className="text-gray-600 text-lg">
                 Kirim absensi Anda untuk hari ini
               </p>
-              <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mx-auto mt-4"></div>
+              <div className="w-24 h-1 bg-purple-500 rounded-full mx-auto mt-4"></div>
             </div>
 
             {/* Time Display */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8 border border-blue-100">
+            <div className="bg-blue-50 rounded-xl p-6 mb-8 border border-blue-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="bg-blue-100 p-3 rounded-full">
@@ -305,7 +395,7 @@ const handleSubmit = async (e) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Attendance Form */}
               <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
+                <div className="bg-blue-600 p-6">
                   <h2 className="text-xl font-semibold text-white mb-2">
                     Kirim Absensi
                   </h2>
@@ -473,7 +563,7 @@ const handleSubmit = async (e) => {
               {/* Attendance Status */}
               {attendanceData && (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6">
+                  <div className="bg-green-600 p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">
                       Status Absensi
                     </h2>
@@ -535,7 +625,7 @@ const handleSubmit = async (e) => {
               {/* Info Card */}
               {!attendanceData && (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6">
+                  <div className="bg-purple-600 p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">
                       Aturan Absensi
                     </h2>

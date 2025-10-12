@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -8,12 +8,13 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function RewardPunishmentRulesPage() {
   const { user } = useAuth();
-  const [rules, setRules] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [formData, setFormData] = useState({
@@ -25,35 +26,35 @@ export default function RewardPunishmentRulesPage() {
 
   const canManage = user?.role === 'administrator' || user?.role === 'teacher';
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const response = await api.get('/reward-punishment-rules');
-      setRules(response.data);
-    } catch (error) {
-      console.error('Error fetching rules:', error);
-    } finally {
-      setLoading(false);
+  // Fetch data using SWR
+  const { data: rulesData, error: rulesError, mutate: mutateRules } = useSWR('/reward-punishment-rules', {
+    onError: (error) => {
+      toast.error('Gagal memuat data aturan hadiah & hukuman');
+      console.error('Rules error:', error);
     }
-  };
+  });
+
+  const rules = rulesData || [];
+  const loading = !rulesData;
+  const error = rulesError;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingRule) {
         await api.put(`/reward-punishment-rules/${editingRule.id}`, formData);
+        toast.success("Aturan berhasil diperbarui");
       } else {
         await api.post('/reward-punishment-rules', formData);
+        toast.success("Aturan berhasil ditambahkan");
       }
       setShowModal(false);
       setEditingRule(null);
       setFormData({ type: '', name: '', points: '', description: '' });
-      fetchData();
+      mutateRules();
     } catch (error) {
       console.error('Error saving rule:', error);
+      toast.error("Gagal menyimpan aturan: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -72,9 +73,11 @@ export default function RewardPunishmentRulesPage() {
     if (confirm('Apakah Anda yakin ingin menghapus aturan ini?')) {
       try {
         await api.delete(`/reward-punishment-rules/${id}`);
-        fetchData();
+        toast.success("Aturan berhasil dihapus");
+        mutateRules();
       } catch (error) {
         console.error('Error deleting rule:', error);
+        toast.error("Gagal menghapus aturan: " + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -101,7 +104,34 @@ export default function RewardPunishmentRulesPage() {
     return (
       <ProtectedRoute>
         <Layout>
-          <LoadingSpinner />
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <Skeleton height={36} width={300} />
+                <Skeleton height={20} width={250} className="mt-2" />
+              </div>
+              <Skeleton height={48} width={160} className="rounded-xl" />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton height={32} width={80} className="rounded-full" />
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={60} />
+                      <Skeleton height={40} width={250} />
+                      <div className="flex space-x-2">
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );
@@ -113,7 +143,7 @@ export default function RewardPunishmentRulesPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Aturan Hadiah & Hukuman</h1>
+              <h1 className="text-3xl font-bold text-orange-600">Aturan Hadiah & Hukuman</h1>
               <p className="text-gray-600 mt-1">
                 {canManage ? 'Kelola aturan hadiah dan hukuman untuk siswa' : 'Lihat aturan hadiah dan hukuman'}
               </p>
@@ -121,7 +151,7 @@ export default function RewardPunishmentRulesPage() {
             {canManage && (
               <button
                 onClick={openCreateModal}
-                className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-red-700 active:from-orange-800 active:to-red-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+                className="bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 active:bg-orange-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
               >
                 <Plus className="h-5 w-5" />
                 <span>Tambah Aturan</span>

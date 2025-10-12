@@ -16,52 +16,58 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function StudentDisciplinePage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     date: new Date().toISOString().split("T")[0], // Today's date
     status: "",
     grade_id: "",
   });
-  const [grades, setGrades] = useState([]);
 
-  const fetchGrades = async () => {
-    try {
-      const response = await api.get("/grades");
-      setGrades(response.data);
-    } catch (error) {
-      console.error("Error fetching grades:", error);
+  // Fetch data using SWR
+  const { data: gradesData, error: gradesError } = useSWR('/grades', {
+    onError: (error) => {
+      toast.error('Gagal memuat data kelas');
+      console.error('Grades error:', error);
     }
-  };
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
+  const attendanceKey = `/attendances?date=${filters.date}${filters.status ? `&status=${filters.status}` : ''}${filters.grade_id ? `&grade_id=${filters.grade_id}` : ''}`;
+  const { data: attendanceData, error: attendanceError, mutate: mutateAttendance } = useSWR(attendanceKey, {
+    onError: (error) => {
+      toast.error('Gagal memuat data absensi');
+      console.error('Attendance error:', error);
+      console.error('Attendance error response:', error?.response);
+      console.error('Attendance error status:', error?.response?.status);
+      console.error('Attendance error data:', error?.response?.data);
+    },
+    onSuccess: (data) => {
+      console.log('Attendance success:', data);
+    },
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 0, // Disable caching
+    errorRetryCount: 0, // Don't retry on error
+  });
 
-      params.append("date", filters.date);
-      if (filters.status) params.append("status", filters.status);
-      if (filters.grade_id) params.append("grade_id", filters.grade_id);
+  const grades = gradesData || [];
+  const data = attendanceData;
+  const loading = !gradesData || !attendanceData;
+  const error = gradesError || attendanceError;
 
-      const response = await api.get(`/attendances?${params}`);
-      setData(response.data);
-    } catch (error) {
-      console.error("Error fetching attendance data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Re-fetch attendance data when filters change
   useEffect(() => {
-    fetchGrades();
-    fetchData();
-  }, [filters]);
+    mutateAttendance();
+  }, [filters.date, filters.status, filters.grade_id, mutateAttendance]);
 
+  console.log('Attendance data:', data);
+  console.log('Attendance key:', attendanceKey);
   if (user?.role !== "administrator") {
     return (
       <ProtectedRoute>
@@ -108,11 +114,75 @@ export default function StudentDisciplinePage() {
     router.push(`/student-discipline/status/${status}?date=${filters.date}&grade_id=${filters.grade_id}`);
   };
 
+  const handleCompletePunishment = async (recordId) => {
+    if (confirm('Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?')) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reward-punishment-records/${recordId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'done',
+            notes: 'Hukuman telah dieksekusi melalui sistem absensi'
+          }),
+        });
+
+        toast.success('Hukuman berhasil ditandai selesai');
+        mutateAttendance(); // Refresh data
+      } catch (error) {
+        console.error('Error completing punishment:', error);
+        toast.error('Gagal menandai hukuman selesai');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
         <Layout>
-          <LoadingSpinner />
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <Skeleton height={36} width={250} />
+                <Skeleton height={20} width={200} className="mt-2" />
+              </div>
+            </div>
+
+            <div className="bg-white shadow-xl rounded-2xl border border-purple-100 p-6 mb-6">
+              <Skeleton height={24} width={100} className="mb-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Skeleton height={48} />
+                <Skeleton height={48} />
+                <Skeleton height={48} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} height={120} className="rounded-xl" />
+              ))}
+            </div>
+
+            <div className="bg-white shadow-xl rounded-2xl border border-purple-100 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={150} />
+                      <Skeleton height={40} width={100} />
+                      <Skeleton height={40} width={80} />
+                      <Skeleton height={40} width={60} />
+                      <Skeleton height={40} width={100} />
+                      <Skeleton height={40} width={60} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );
@@ -124,7 +194,7 @@ export default function StudentDisciplinePage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-orange-600">
                 Rekap Absensi Siswa
               </h1>
               <p className="text-gray-600 mt-1">
@@ -204,7 +274,7 @@ export default function StudentDisciplinePage() {
           {/* Summary Cards */}
           {data && data.attendances && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-              <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
+              <div className="bg-green-600 rounded-xl p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-green-100 text-sm font-medium">
@@ -219,7 +289,7 @@ export default function StudentDisciplinePage() {
               </div>
 
               <div
-                className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105"
+                className="bg-blue-600 rounded-xl p-6 text-white cursor-pointer hover:bg-blue-700 transition-all duration-200 transform hover:scale-105"
                 onClick={() => handleStatusCardClick('present')}
               >
                 <div className="flex items-center justify-between">
@@ -237,7 +307,7 @@ export default function StudentDisciplinePage() {
               </div>
 
               <div
-                className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white cursor-pointer hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 transform hover:scale-105"
+                className="bg-yellow-600 rounded-xl p-6 text-white cursor-pointer hover:bg-yellow-700 transition-all duration-200 transform hover:scale-105"
                 onClick={() => handleStatusCardClick('late')}
               >
                 <div className="flex items-center justify-between">
@@ -257,7 +327,7 @@ export default function StudentDisciplinePage() {
               </div>
 
               <div
-                className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white cursor-pointer hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105"
+                className="bg-red-600 rounded-xl p-6 text-white cursor-pointer hover:bg-red-700 transition-all duration-200 transform hover:scale-105"
                 onClick={() => handleStatusCardClick('absent')}
               >
                 <div className="flex items-center justify-between">
@@ -283,7 +353,7 @@ export default function StudentDisciplinePage() {
             <div className="bg-white shadow-xl rounded-2xl border border-purple-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-purple-100">
-                  <thead className="bg-gradient-to-r from-purple-50 via-pink-50 to-indigo-50">
+                  <thead className="bg-purple-50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Nama Siswa
@@ -307,6 +377,12 @@ export default function StudentDisciplinePage() {
                         Catatan
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                        Status Hukuman
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                        Aksi
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Foto
                       </th>
                     </tr>
@@ -315,13 +391,13 @@ export default function StudentDisciplinePage() {
                     {data.attendances.map((attendance) => (
                       <tr
                         key={attendance.id}
-                        className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                        className="hover:bg-blue-50 transition-all duration-300"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {attendance.student?.fullname || "N/A"}
+                          {attendance.student?.fullname || attendance.user?.name || "N/A"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.student?.grade?.name || "N/A"}
+                          {attendance.student?.grade?.name || (attendance.user ? "Administrator" : "N/A")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -375,11 +451,43 @@ export default function StudentDisciplinePage() {
                             (attendance.student?.student_point?.total_points || 0) > 0 ? 'text-green-600' :
                             (attendance.student?.student_point?.total_points || 0) < 0 ? 'text-red-600' : 'text-gray-600'
                           }`}>
-                            {attendance.student?.student_point?.total_points || 0}
+                            {attendance.student?.student_point?.total_points || (attendance.user ? 'N/A' : 0)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
                           {attendance.remarks || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {attendance.status === 'late' && attendance.punishmentRecords ? (
+                            attendance.punishmentRecords.length > 0 ? (
+                              attendance.punishmentRecords.some(record => record.status === 'completed') ? (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  ✓ Selesai
+                                </span>
+                              ) : (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                  ⏳ Pending
+                                </span>
+                              )
+                            ) : (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                - Tidak Ada
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {attendance.status === 'late' && attendance.punishmentRecords && attendance.punishmentRecords.some(record => record.status === 'pending') && (
+                            <button
+                              onClick={() => handleCompletePunishment(attendance.punishmentRecords.find(record => record.status === 'pending').id)}
+                              className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
+                              title="Tandai hukuman selesai"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.medias && attendance.medias.length > 0 ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -8,13 +8,13 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function TeachersPage() {
   const { user } = useAuth();
-  const [teachers, setTeachers] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [formData, setFormData] = useState({
@@ -41,24 +41,24 @@ export default function TeachersPage() {
     );
   }
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [teachersRes, usersRes] = await Promise.all([
-        api.get('/teachers'),
-        api.get('/users')
-      ]);
-      setTeachers(teachersRes.data);
-      setUsers(usersRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+  // Fetch data using SWR
+  const { data: teachersData, error: teachersError, mutate: mutateTeachers } = useSWR('/teachers', {
+    onError: (error) => {
+      toast.error('Gagal memuat data guru');
+      console.error('Teachers error:', error);
     }
-  };
+  });
+  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR('/users', {
+    onError: (error) => {
+      toast.error('Gagal memuat data pengguna');
+      console.error('Users error:', error);
+    }
+  });
+
+  const teachers = teachersData || [];
+  const users = usersData || [];
+  const loading = !teachersData || !usersData;
+  const error = teachersError || usersError;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -69,15 +69,19 @@ export default function TeachersPage() {
           phone_number: formData.phone_number,
           address: formData.address
         });
+        toast.success("Guru berhasil diperbarui");
       } else {
         await api.post('/teachers', formData);
+        toast.success("Guru berhasil ditambahkan");
       }
       setShowModal(false);
       setEditingTeacher(null);
       setFormData({ user_id: '', fullname: '', phone_number: '', address: '', subject: '', hire_date: '' });
-      fetchData();
+      mutateTeachers();
+      mutateUsers();
     } catch (error) {
       console.error('Error saving teacher:', error);
+      toast.error("Gagal menyimpan guru: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -98,9 +102,12 @@ export default function TeachersPage() {
     if (confirm('Apakah Anda yakin ingin menghapus guru ini?')) {
       try {
         await api.delete(`/teachers/${id}`);
-        fetchData();
+        toast.success("Guru berhasil dihapus");
+        mutateTeachers();
+        mutateUsers();
       } catch (error) {
         console.error('Error deleting teacher:', error);
+        toast.error("Gagal menghapus guru: " + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -120,7 +127,35 @@ export default function TeachersPage() {
     return (
       <ProtectedRoute>
         <Layout>
-          <LoadingSpinner />
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <Skeleton height={36} width={250} />
+                <Skeleton height={20} width={200} className="mt-2" />
+              </div>
+              <Skeleton height={48} width={140} className="rounded-xl" />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={120} />
+                      <Skeleton height={40} width={150} />
+                      <Skeleton height={40} width={100} />
+                      <Skeleton height={40} width={100} />
+                      <div className="flex space-x-2">
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );
@@ -132,12 +167,12 @@ export default function TeachersPage() {
       <div className="px-4 py-6 sm:px-0">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Manajemen Guru</h1>
+            <h1 className="text-3xl font-bold text-green-600">Manajemen Guru</h1>
             <p className="text-gray-600 mt-1">Kelola profil dan informasi guru</p>
           </div>
           <button
             onClick={openCreateModal}
-            className="bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-3 rounded-xl hover:from-green-700 hover:to-teal-700 active:from-green-800 active:to-teal-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+            className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 active:bg-green-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
           >
             <Plus className="h-5 w-5" />
             <span>Tambah Guru</span>

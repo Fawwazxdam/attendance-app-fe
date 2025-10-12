@@ -14,7 +14,8 @@ import {
   Calendar,
   Filter,
 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
 
 export default function AttendanceStatusPage() {
   const { user } = useAuth();
@@ -23,44 +24,30 @@ export default function AttendanceStatusPage() {
   const searchParams = useSearchParams();
   const status = params.status;
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [grades, setGrades] = useState([]);
-
   // Get query parameters
   const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
   const gradeId = searchParams.get('grade_id') || '';
 
-  useEffect(() => {
-    fetchGrades();
-    fetchData();
-  }, [status, date, gradeId]);
-
-  const fetchGrades = async () => {
-    try {
-      const response = await api.get("/grades");
-      setGrades(response.data);
-    } catch (error) {
-      console.error("Error fetching grades:", error);
+  // Fetch data using SWR
+  const { data: gradesData, error: gradesError } = useSWR('/grades', {
+    onError: (error) => {
+      toast.error('Gagal memuat data kelas');
+      console.error('Grades error:', error);
     }
-  };
+  });
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      params.append("date", date);
-      params.append("status", status);
-      if (gradeId) params.append("grade_id", gradeId);
-
-      const response = await api.get(`/attendances?${params}`);
-      setData(response.data);
-    } catch (error) {
-      console.error("Error fetching attendance data:", error);
-    } finally {
-      setLoading(false);
+  const attendanceKey = `/attendances?date=${date}&status=${status}${gradeId ? `&grade_id=${gradeId}` : ''}`;
+  const { data: attendanceData, error: attendanceError } = useSWR(attendanceKey, {
+    onError: (error) => {
+      toast.error('Gagal memuat data absensi');
+      console.error('Attendance error:', error);
     }
-  };
+  });
+
+  const grades = gradesData || [];
+  const data = attendanceData;
+  const loading = !gradesData || !attendanceData;
+  const error = gradesError || attendanceError;
 
   if (user?.role !== "administrator") {
     return (
@@ -129,6 +116,31 @@ export default function AttendanceStatusPage() {
   const statusInfo = getStatusInfo(status);
   const StatusIcon = statusInfo.icon;
 
+  const handleCompletePunishment = async (recordId) => {
+    if (confirm('Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?')) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reward-punishment-records/${recordId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'done',
+            notes: 'Hukuman telah dieksekusi melalui sistem absensi'
+          }),
+        });
+
+        toast.success('Hukuman berhasil ditandai selesai');
+        // Re-fetch data by reloading the page
+        window.location.reload();
+      } catch (error) {
+        console.error('Error completing punishment:', error);
+        toast.error('Gagal menandai hukuman selesai');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -187,7 +199,6 @@ export default function AttendanceStatusPage() {
 
           {/* Attendance Table */}
           {data && data.attendances && data.attendances.length > 0 ? (
-            console.log(data.attendances),
             <div className="bg-white shadow-xl rounded-2xl border border-purple-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-purple-100">
@@ -212,6 +223,12 @@ export default function AttendanceStatusPage() {
                         Catatan
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                        Status Hukuman
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                        Aksi
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Foto
                       </th>
                     </tr>
@@ -223,10 +240,10 @@ export default function AttendanceStatusPage() {
                         className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {attendance.student?.fullname || "N/A"}
+                          {attendance.student?.fullname || attendance.user?.name || "N/A"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.student?.grade?.name || "N/A"}
+                          {attendance.student?.grade?.name || (attendance.user ? "Administrator" : "N/A")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {new Date(attendance.created_at).toLocaleTimeString(
@@ -250,11 +267,43 @@ export default function AttendanceStatusPage() {
                             (attendance.student?.student_point?.total_points || 0) > 0 ? 'text-green-600' :
                             (attendance.student?.student_point?.total_points || 0) < 0 ? 'text-red-600' : 'text-gray-600'
                           }`}>
-                            {attendance.student?.student_point?.total_points || 0}
+                            {attendance.student?.student_point?.total_points || (attendance.user ? 'N/A' : 0)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
                           {attendance.remarks || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {attendance.status === 'late' && attendance.punishmentRecords ? (
+                            attendance.punishmentRecords.length > 0 ? (
+                              attendance.punishmentRecords.some(record => record.status === 'completed') ? (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                  ✓ Selesai
+                                </span>
+                              ) : (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                  ⏳ Pending
+                                </span>
+                              )
+                            ) : (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                - Tidak Ada
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {attendance.status === 'late' && attendance.punishmentRecords && attendance.punishmentRecords.some(record => record.status === 'pending') && (
+                            <button
+                              onClick={() => handleCompletePunishment(attendance.punishmentRecords.find(record => record.status === 'pending').id)}
+                              className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
+                              title="Tandai hukuman selesai"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.medias && attendance.medias.length > 0 ? (

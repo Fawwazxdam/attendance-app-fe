@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -8,13 +8,13 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function GradesPage() {
   const { user } = useAuth();
-  const [grades, setGrades] = useState([]);
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingGrade, setEditingGrade] = useState(null);
   const [formData, setFormData] = useState({
@@ -37,39 +37,43 @@ export default function GradesPage() {
     );
   }
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [gradesRes, teachersRes] = await Promise.all([
-        api.get('/grades'),
-        api.get('/teachers')
-      ]);
-      setGrades(gradesRes.data);
-      setTeachers(teachersRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+  // Fetch data using SWR
+  const { data: gradesData, error: gradesError, mutate: mutateGrades } = useSWR('/grades', {
+    onError: (error) => {
+      toast.error('Gagal memuat data kelas');
+      console.error('Grades error:', error);
     }
-  };
+  });
+  const { data: teachersData, error: teachersError, mutate: mutateTeachers } = useSWR('/teachers', {
+    onError: (error) => {
+      toast.error('Gagal memuat data guru');
+      console.error('Teachers error:', error);
+    }
+  });
+
+  const grades = gradesData || [];
+  const teachers = teachersData || [];
+  const loading = !gradesData || !teachersData;
+  const error = gradesError || teachersError;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingGrade) {
         await api.put(`/grades/${editingGrade.id}`, formData);
+        toast.success("Kelas berhasil diperbarui");
       } else {
         await api.post('/grades', formData);
+        toast.success("Kelas berhasil ditambahkan");
       }
       setShowModal(false);
       setEditingGrade(null);
       setFormData({ name: '', homeroom_teacher_id: '' });
-      fetchData();
+      mutateGrades();
+      mutateTeachers();
     } catch (error) {
       console.error('Error saving grade:', error);
+      toast.error("Gagal menyimpan kelas: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -86,9 +90,12 @@ export default function GradesPage() {
     if (confirm('Apakah Anda yakin ingin menghapus kelas ini?')) {
       try {
         await api.delete(`/grades/${id}`);
-        fetchData();
+        toast.success("Kelas berhasil dihapus");
+        mutateGrades();
+        mutateTeachers();
       } catch (error) {
         console.error('Error deleting grade:', error);
+        toast.error("Gagal menghapus kelas: " + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -108,7 +115,33 @@ export default function GradesPage() {
     return (
       <ProtectedRoute>
         <Layout>
-          <LoadingSpinner />
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <Skeleton height={36} width={250} />
+                <Skeleton height={20} width={200} className="mt-2" />
+              </div>
+              <Skeleton height={48} width={140} className="rounded-xl" />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton height={40} width={150} />
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={80} />
+                      <div className="flex space-x-2">
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );
@@ -120,12 +153,12 @@ export default function GradesPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Manajemen Kelas</h1>
+              <h1 className="text-3xl font-bold text-indigo-600">Manajemen Kelas</h1>
               <p className="text-gray-600 mt-1">Kelola kelas dan guru wali kelas</p>
             </div>
             <button
               onClick={openCreateModal}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:from-indigo-800 active:to-purple-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+              className="bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 active:bg-indigo-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-5 w-5" />
               <span>Tambah Kelas</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -8,14 +8,13 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function StudentsPage() {
   const { user } = useAuth();
-  const [students, setStudents] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [grades, setGrades] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [formData, setFormData] = useState({
@@ -43,31 +42,31 @@ export default function StudentsPage() {
     );
   }
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [studentsRes, usersRes, gradesRes] = await Promise.all([
-        api.get("/students"),
-        api.get("/users"),
-        api.get("/grades"),
-      ]);
-      setStudents(studentsRes.data);
-      setUsers(usersRes.data);
-      setGrades(gradesRes.data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+  // Fetch data using SWR
+  const { data: studentsData, error: studentsError, mutate: mutateStudents } = useSWR('/students', {
+    onError: (error) => {
+      toast.error('Gagal memuat data siswa');
+      console.error('Students error:', error);
     }
-  };
-  console.log(
-    "user : ",users, 
-    "Grades : ",grades,
-    "Student :", students
-  )
+  });
+  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR('/users', {
+    onError: (error) => {
+      toast.error('Gagal memuat data pengguna');
+      console.error('Users error:', error);
+    }
+  });
+  const { data: gradesData, error: gradesError, mutate: mutateGrades } = useSWR('/grades', {
+    onError: (error) => {
+      toast.error('Gagal memuat data kelas');
+      console.error('Grades error:', error);
+    }
+  });
+
+  const students = studentsData || [];
+  const users = usersData || [];
+  const grades = gradesData || [];
+  const loading = !studentsData || !usersData || !gradesData;
+  const error = studentsError || usersError || gradesError;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,8 +77,10 @@ export default function StudentsPage() {
           phone_number: formData.phone_number,
           image: formData.image,
         });
+        toast.success("Siswa berhasil diperbarui");
       } else {
         await api.post("/students", formData);
+        toast.success("Siswa berhasil ditambahkan");
       }
       setShowModal(false);
       setEditingStudent(null);
@@ -92,9 +93,11 @@ export default function StudentsPage() {
         phone_number: "",
         image: "",
       });
-      fetchData();
+      mutateStudents();
+      mutateUsers();
     } catch (error) {
       console.error("Error saving student:", error);
+      toast.error("Gagal menyimpan siswa: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -116,9 +119,12 @@ export default function StudentsPage() {
     if (confirm("Apakah Anda yakin ingin menghapus siswa ini?")) {
       try {
         await api.delete(`/students/${id}`);
-        fetchData();
+        toast.success("Siswa berhasil dihapus");
+        mutateStudents();
+        mutateUsers();
       } catch (error) {
         console.error("Error deleting student:", error);
+        toast.error("Gagal menghapus siswa: " + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -151,7 +157,35 @@ export default function StudentsPage() {
     return (
       <ProtectedRoute>
         <Layout>
-          <LoadingSpinner />
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <Skeleton height={36} width={300} />
+                <Skeleton height={20} width={250} className="mt-2" />
+              </div>
+              <Skeleton height={48} width={150} className="rounded-xl" />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={150} />
+                      <Skeleton height={40} width={120} />
+                      <Skeleton height={40} width={80} />
+                      <Skeleton height={40} width={100} />
+                      <div className="flex space-x-2">
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );
@@ -163,7 +197,7 @@ export default function StudentsPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold text-orange-600">
                   Manajemen Siswa
                 </h1>
                 <p className="text-gray-600 mt-1">
@@ -172,7 +206,7 @@ export default function StudentsPage() {
             </div>
             <button
               onClick={openCreateModal}
-              className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-xl hover:from-orange-700 hover:to-red-700 active:from-orange-800 active:to-red-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+              className="bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 active:bg-orange-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-5 w-5" />
               <span>Tambah Siswa</span>

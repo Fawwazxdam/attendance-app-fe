@@ -143,7 +143,7 @@ export default function Dashboard() {
 
         {/* Welcome Card - Full Width */}
         <motion.div
-          className="col-span-1 md:col-span-2 lg:col-span-4 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-2xl p-8 text-white shadow-xl"
+          className="col-span-1 md:col-span-2 lg:col-span-4 bg-blue-600 rounded-2xl p-8 text-white shadow-xl"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6 }}
@@ -340,7 +340,7 @@ export default function Dashboard() {
               {roleData.data.classes_today.map((classData, index) => (
                 <motion.div
                   key={index}
-                  className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100"
+                  className="p-4 bg-blue-50 rounded-lg border border-blue-100"
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.7 + index * 0.1 }}
@@ -431,7 +431,7 @@ export default function Dashboard() {
           </h3>
           <div className="space-y-3">
             <motion.button
-              className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-200 transition-all duration-200 group"
+              className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -448,7 +448,7 @@ export default function Dashboard() {
 
             {(user?.role === 'teacher' || user?.role === 'administrator') && (
               <motion.button
-                className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-teal-50 hover:border-green-200 transition-all duration-200 group"
+                className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-green-50 hover:border-green-200 transition-all duration-200 group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -466,7 +466,7 @@ export default function Dashboard() {
 
             {(user?.role === 'teacher' || user?.role === 'administrator') && (
               <motion.button
-                className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:border-purple-200 transition-all duration-200 group"
+                className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-purple-50 hover:border-purple-200 transition-all duration-200 group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

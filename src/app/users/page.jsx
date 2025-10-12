@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -8,12 +8,13 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import api from "@/services/api";
+import useSWR from 'swr';
+import toast from 'react-hot-toast';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function UsersPage() {
   const { user } = useAuth();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -39,20 +40,17 @@ export default function UsersPage() {
     );
   }
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await api.get('/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
+  // Fetch data using SWR
+  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR('/users', {
+    onError: (error) => {
+      toast.error('Gagal memuat data pengguna');
+      console.error('Users error:', error);
     }
-  };
+  });
+
+  const users = usersData || [];
+  const loading = !usersData;
+  const error = usersError;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,15 +60,18 @@ export default function UsersPage() {
           name: formData.name,
           email: formData.email
         });
+        toast.success("Pengguna berhasil diperbarui");
       } else {
         await api.post('/users', formData);
+        toast.success("Pengguna berhasil ditambahkan");
       }
       setShowModal(false);
       setEditingUser(null);
       setFormData({ name: '', username: '', email: '', password: '', role: 'student' });
-      fetchUsers();
+      mutateUsers();
     } catch (error) {
       console.error('Error saving user:', error);
+      toast.error("Gagal menyimpan pengguna: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -90,9 +91,11 @@ export default function UsersPage() {
     if (confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
       try {
         await api.delete(`/users/${id}`);
-        fetchUsers();
+        toast.success("Pengguna berhasil dihapus");
+        mutateUsers();
       } catch (error) {
         console.error('Error deleting user:', error);
+        toast.error("Gagal menghapus pengguna: " + (error.response?.data?.message || error.message));
       }
     }
   };
@@ -107,7 +110,35 @@ export default function UsersPage() {
     return (
       <ProtectedRoute>
         <Layout>
-          <LoadingSpinner />
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <Skeleton height={36} width={250} />
+                <Skeleton height={20} width={200} className="mt-2" />
+              </div>
+              <Skeleton height={48} width={160} className="rounded-xl" />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center space-x-4">
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={120} />
+                      <Skeleton height={40} width={200} />
+                      <Skeleton height={40} width={100} />
+                      <Skeleton height={40} width={150} />
+                      <div className="flex space-x-2">
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                        <Skeleton height={32} width={32} className="rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );
@@ -119,12 +150,12 @@ export default function UsersPage() {
       <div className="px-4 py-6 sm:px-0">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Manajemen Pengguna</h1>
+            <h1 className="text-3xl font-bold text-purple-600">Manajemen Pengguna</h1>
             <p className="text-gray-600 mt-1">Kelola pengguna sistem dan peran mereka</p>
           </div>
           <button
             onClick={openCreateModal}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:from-purple-700 hover:to-blue-700 active:from-purple-800 active:to-blue-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+            className="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 active:bg-purple-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
           >
             <Plus className="h-5 w-5" />
             <span>Tambah Pengguna</span>
