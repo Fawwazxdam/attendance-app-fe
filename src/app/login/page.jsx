@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/services/authService";
-import { Eye, EyeOff, BarChart3, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, School, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -53,7 +53,7 @@ export default function LoginPage() {
         <div
           className="w-full h-full bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1974&q=80')`,
+            backgroundImage: `url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1974&q=80')`,
           }}
         >
           {/* Overlay */}
@@ -63,15 +63,15 @@ export default function LoginPage() {
           <div className="absolute inset-0 flex items-center justify-center p-12">
             <div className="text-center text-white">
               <div className="mb-8">
-                <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-90" />
-                <h1 className="text-4xl font-bold mb-4">TaskFlow</h1>
-                <p className="text-xl opacity-90">Streamline Your Workflow</p>
+                <School className="w-16 h-16 mx-auto mb-4 opacity-90" />
+                <h1 className="text-4xl font-bold mb-4">Absensi Siswa</h1>
+                <p className="text-xl opacity-90">Kelola Absensi Siswa</p>
               </div>
 
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-sm mx-auto">
-                <h3 className="text-lg font-semibold mb-2">Manage Projects Efficiently</h3>
+                <h3 className="text-lg font-semibold mb-2">Lacak Absensi dengan Mudah</h3>
                 <p className="text-sm opacity-90">
-                  Organize tasks, track progress, and collaborate with your team in one beautiful interface.
+                  Pantau kehadiran siswa, kelola catatan, dan pastikan pelacakan absensi yang akurat.
                 </p>
               </div>
             </div>
@@ -90,13 +90,13 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center lg:text-left">
             <div className="lg:hidden mx-auto h-16 w-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
-              <BarChart3 className="h-8 w-8 text-white" />
+              <School className="h-8 w-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back 👋
+              Selamat datang kembali 👋
             </h2>
             <p className="text-gray-600">
-              Sign in to your TaskFlow account
+              Masuk ke akun Absensi Siswa Anda
             </p>
           </div>
 
@@ -112,7 +112,7 @@ export default function LoginPage() {
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
+                  Alamat Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -120,7 +120,7 @@ export default function LoginPage() {
                   </div>
                   <input
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="Masukkan email Anda"
                     value={formData.email}
                     onChange={handleInputChange("email")}
                     required
@@ -133,13 +133,13 @@ export default function LoginPage() {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Password
+                    Kata Sandi
                   </label>
                   <a
                     href="#"
                     className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
                   >
-                    Forgot password?
+                    Lupa kata sandi?
                   </a>
                 </div>
                 <div className="relative">
@@ -148,7 +148,7 @@ export default function LoginPage() {
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="Masukkan kata sandi Anda"
                     value={formData.password}
                     onChange={handleInputChange("password")}
                     required
@@ -179,7 +179,7 @@ export default function LoginPage() {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Remember me
+                  Ingat saya
                 </label>
               </div>
 
@@ -192,10 +192,10 @@ export default function LoginPage() {
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
+                    Masuk...
                   </div>
                 ) : (
-                  "Sign in"
+                  "Masuk"
                 )}
               </button>
             </form>
@@ -203,12 +203,12 @@ export default function LoginPage() {
             {/* Footer */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                New to TaskFlow?{" "}
+                Baru di Absensi Siswa?{" "}
                 <a
                   href="#"
                   className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
                 >
-                  Create an account
+                  Buat akun
                 </a>
               </p>
             </div>
@@ -216,9 +216,9 @@ export default function LoginPage() {
 
           {/* Demo Credentials */}
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
+            <h3 className="text-sm font-medium text-blue-900 mb-2">Kredensial Demo</h3>
             <p className="text-xs text-blue-700">
-              Use any email and password to sign in. This is a demo application.
+              Gunakan email dan kata sandi apa saja untuk masuk. Ini adalah aplikasi demo.
             </p>
           </div>
         </div>

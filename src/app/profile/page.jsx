@@ -13,15 +13,15 @@ export default function ProfilePage() {
       <Layout>
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Profil</h1>
           <p className="text-gray-600 mt-1">
-            Manage your account information and settings.
+            Kelola informasi akun dan pengaturan Anda.
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Personal Information</h2>
+            <h2 className="text-lg font-medium text-gray-900">Informasi Pribadi</h2>
           </div>
 
           <div className="p-6 space-y-6">
@@ -39,7 +39,7 @@ export default function ProfilePage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
+                    Nama Lengkap
                   </label>
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <User className="w-5 h-5 text-gray-400" />
@@ -49,7 +49,7 @@ export default function ProfilePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
+                    Alamat Email
                   </label>
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <Mail className="w-5 h-5 text-gray-400" />
@@ -61,7 +61,7 @@ export default function ProfilePage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Username
+                    Nama Pengguna
                   </label>
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <User className="w-5 h-5 text-gray-400" />
@@ -71,7 +71,7 @@ export default function ProfilePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role
+                    Peran
                   </label>
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <Shield className="w-5 h-5 text-gray-400" />
@@ -83,7 +83,7 @@ export default function ProfilePage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Created
+                Akun Dibuat
               </label>
               <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                 <Calendar className="w-5 h-5 text-gray-400" />
@@ -96,19 +96,19 @@ export default function ProfilePage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Account Settings</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Pengaturan Akun</h3>
           <div className="space-y-4">
             <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <p className="text-sm font-medium text-gray-900">Change Password</p>
-              <p className="text-xs text-gray-500">Update your account password</p>
+              <p className="text-sm font-medium text-gray-900">Ubah Kata Sandi</p>
+              <p className="text-xs text-gray-500">Perbarui kata sandi akun Anda</p>
             </button>
             <button className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <p className="text-sm font-medium text-gray-900">Notification Settings</p>
-              <p className="text-xs text-gray-500">Manage your notification preferences</p>
+              <p className="text-sm font-medium text-gray-900">Pengaturan Notifikasi</p>
+              <p className="text-xs text-gray-500">Kelola preferensi notifikasi Anda</p>
             </button>
             <button className="w-full text-left px-4 py-3 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
-              <p className="text-sm font-medium text-red-900">Delete Account</p>
-              <p className="text-xs text-red-500">Permanently delete your account</p>
+              <p className="text-sm font-medium text-red-900">Hapus Akun</p>
+              <p className="text-xs text-red-500">Hapus akun Anda secara permanen</p>
             </button>
           </div>
         </div>

@@ -1,12 +1,16 @@
-export default function LoadingSpinner({ size = "h-12 w-12", className = "" }) {
+export default function LoadingSpinner({ size = "h-16 w-16", className = "" }) {
   return (
-    <div className={`min-h-screen flex items-center justify-center ${className}`}>
-      <div className="flex flex-col items-center space-y-4">
+    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 ${className}`}>
+      <div className="flex flex-col items-center space-y-6">
         <div className={`relative ${size}`}>
-          <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-purple-200 animate-pulse"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-600 border-r-pink-500 animate-spin"></div>
+          <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-blue-500 border-l-indigo-600 animate-spin animation-reverse"></div>
         </div>
-        <p className="text-gray-600 text-sm font-medium animate-pulse">Loading...</p>
+        <div className="text-center">
+          <p className="text-purple-700 text-lg font-semibold animate-pulse">Memuat...</p>
+          <p className="text-purple-500 text-sm mt-1">Harap tunggu</p>
+        </div>
       </div>
     </div>
   );

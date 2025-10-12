@@ -22,6 +22,21 @@ export default function GradesPage() {
     homeroom_teacher_id: ''
   });
 
+  if (user?.role !== 'administrator' && user?.role !== 'teacher') {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Akses Ditolak</h2>
+              <p className="text-gray-600">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+            </div>
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -68,7 +83,7 @@ export default function GradesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this grade?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus kelas ini?')) {
       try {
         await api.delete(`/grades/${id}`);
         fetchData();
@@ -103,22 +118,25 @@ export default function GradesPage() {
     <ProtectedRoute>
       <Layout>
         <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Grades Management</h1>
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Manajemen Kelas</h1>
+              <p className="text-gray-600 mt-1">Kelola kelas dan guru wali kelas</p>
+            </div>
             <button
               onClick={openCreateModal}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 active:from-indigo-800 active:to-purple-800 transform hover:scale-105 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
             >
-              <Plus className="h-4 w-4" />
-              <span>Add Grade</span>
+              <Plus className="h-5 w-5" />
+              <span>Tambah Kelas</span>
             </button>
           </div>
 
           <DataTable
             columns={[
-              { header: 'Name', key: 'name' },
-              { header: 'Homeroom Teacher', render: (grade) => getTeacherName(grade.homeroom_teacher_id) },
-              { header: 'Students Count', render: (grade) => grade.students ? grade.students.length : 0 },
+              { header: 'Nama', key: 'name' },
+              { header: 'Guru Wali Kelas', render: (grade) => getTeacherName(grade.homeroom_teacher_id) },
+              { header: 'Jumlah Siswa', render: (grade) => grade.students ? grade.students.length : 0 },
             ]}
             data={grades}
             actions={(grade) => (
@@ -142,11 +160,11 @@ export default function GradesPage() {
           <Modal
             isOpen={showModal}
             onClose={() => setShowModal(false)}
-            title={editingGrade ? 'Edit Grade' : 'Add New Grade'}
+            title={editingGrade ? 'Edit Kelas' : 'Tambah Kelas Baru'}
           >
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Name</label>
+                <label className="block text-sm font-medium text-gray-700">Nama</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -156,14 +174,14 @@ export default function GradesPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Homeroom Teacher</label>
+                <label className="block text-sm font-medium text-gray-700">Guru Wali Kelas</label>
                 <select
                   value={formData.homeroom_teacher_id}
                   onChange={(e) => setFormData({ ...formData, homeroom_teacher_id: e.target.value })}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   required
                 >
-                  <option value="">Select Teacher</option>
+                  <option value="">Pilih Guru</option>
                   {teachers.map((teacher) => (
                     <option key={teacher.id} value={teacher.id}>{teacher.fullname}</option>
                   ))}
@@ -175,13 +193,13 @@ export default function GradesPage() {
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 active:bg-gray-300 transform hover:scale-105 transition-all duration-200"
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  {editingGrade ? 'Update' : 'Create'}
+                  {editingGrade ? 'Perbarui' : 'Buat'}
                 </button>
               </div>
             </form>
