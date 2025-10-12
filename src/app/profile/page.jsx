@@ -4,9 +4,64 @@ import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { User, Mail, Shield, Calendar } from "lucide-react";
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div>
+              <Skeleton height={32} width={200} />
+              <Skeleton height={20} width={300} className="mt-2" />
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <Skeleton height={24} width={150} />
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-center space-x-4">
+                  <Skeleton circle height={80} width={80} />
+                  <div>
+                    <Skeleton height={24} width={200} />
+                    <Skeleton height={16} width={100} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <Skeleton height={60} />
+                    <Skeleton height={60} />
+                  </div>
+                  <div className="space-y-4">
+                    <Skeleton height={60} />
+                    <Skeleton height={60} />
+                  </div>
+                </div>
+
+                <Skeleton height={60} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <Skeleton height={24} width={150} className="mb-4" />
+              <div className="space-y-4">
+                <Skeleton height={60} />
+                <Skeleton height={60} />
+                <Skeleton height={60} />
+              </div>
+            </div>
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
