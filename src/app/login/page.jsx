@@ -52,9 +52,6 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div
           className="w-full h-full bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1974&q=80')`,
-          }}
         >
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/80 via-indigo-600/70 to-purple-700/60"></div>
@@ -64,14 +61,13 @@ export default function LoginPage() {
             <div className="text-center text-white">
               <div className="mb-8">
                 <School className="w-16 h-16 mx-auto mb-4 opacity-90" />
-                <h1 className="text-4xl font-bold mb-4">Absensi Siswa</h1>
-                <p className="text-xl opacity-90">Kelola Absensi Siswa</p>
+                <h1 className="text-4xl font-bold mb-4">Jurnal Kehadiran</h1>
               </div>
 
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-sm mx-auto">
-                <h3 className="text-lg font-semibold mb-2">Lacak Absensi dengan Mudah</h3>
+                <h3 className="text-lg font-semibold mb-2">Lacak jurnal kehadiran dengan Mudah</h3>
                 <p className="text-sm opacity-90">
-                  Pantau kehadiran siswa, kelola catatan, dan pastikan pelacakan absensi yang akurat.
+                  Pantau kehadiran siswa, kelola catatan, dan pastikan pelacakan jurnal kehadiran yang akurat.
                 </p>
               </div>
             </div>
@@ -96,7 +92,7 @@ export default function LoginPage() {
               Selamat datang kembali 👋
             </h2>
             <p className="text-gray-600">
-              Masuk ke akun Absensi Siswa Anda
+              Masuk ke akun Jurnal Kehadiran Anda
             </p>
           </div>
 
@@ -201,7 +197,7 @@ export default function LoginPage() {
             </form>
 
             {/* Footer */}
-            <div className="mt-6 text-center">
+            {/* <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Baru di Absensi Siswa?{" "}
                 <a
@@ -211,15 +207,7 @@ export default function LoginPage() {
                   Buat akun
                 </a>
               </p>
-            </div>
-          </div>
-
-          {/* Demo Credentials */}
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Kredensial Demo</h3>
-            <p className="text-xs text-blue-700">
-              Gunakan email dan kata sandi apa saja untuk masuk. Ini adalah aplikasi demo.
-            </p>
+            </div> */}
           </div>
         </div>
       </div>

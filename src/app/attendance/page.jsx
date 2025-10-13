@@ -361,7 +361,7 @@ const handleSubmit = async (e) => {
             {/* Header */}
             <div className="mb-8 text-center">
               <h1 className="text-4xl font-bold text-purple-600 mb-3">
-                Absensi Harian
+                Jurnal Kehadiran Harian
               </h1>
               <p className="text-gray-600 text-lg">
                 Kirim absensi Anda untuk hari ini
@@ -397,7 +397,7 @@ const handleSubmit = async (e) => {
               <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                 <div className="bg-blue-600 p-6">
                   <h2 className="text-xl font-semibold text-white mb-2">
-                    Kirim Absensi
+                    Kirim Kehadiran
                   </h2>
                   <p className="text-blue-100">Tandai kehadiran Anda hari ini</p>
                 </div>
@@ -502,7 +502,7 @@ const handleSubmit = async (e) => {
                               remarks: e.target.value,
                             })
                           }
-                          placeholder="Tambahkan catatan tentang absensi Anda..."
+                          placeholder="Tambahkan catatan tentang kehdiran Anda..."
                           className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900"
                           rows={4}
                         />
@@ -522,7 +522,7 @@ const handleSubmit = async (e) => {
                       ) : (
                         <div className="flex items-center justify-center">
                           <CheckCircle className="h-5 w-5 mr-2" />
-                          Kirim Absensi
+                          Kirim kehadiran
                         </div>
                       )}
                     </button>
@@ -550,10 +550,10 @@ const handleSubmit = async (e) => {
                     <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                       <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-green-900 mb-2">
-                        Absensi Dikirim!
+                        Jurnal kehadiran Dikirim!
                       </h3>
                       <p className="text-green-700">
-                        Absensi Anda telah dicatat dengan berhasil.
+                        Jurnal kehadiran Anda telah dicatat dengan berhasil.
                       </p>
                     </div>
                   </div>
@@ -565,9 +565,9 @@ const handleSubmit = async (e) => {
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="bg-green-600 p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">
-                      Status Absensi
+                      Status kehadiran
                     </h2>
-                    <p className="text-green-100">Detail absensi hari ini</p>
+                    <p className="text-green-100">Detail kehadiran hari ini</p>
                   </div>
 
                   <div className="p-6">
@@ -646,9 +646,9 @@ const handleSubmit = async (e) => {
                       <div className="flex items-start space-x-3">
                         <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                         <div>
-                          <h4 className="font-medium text-gray-900">Izin</h4>
+                          <h4 className="font-medium text-gray-900">Toleransi</h4>
                           <p className="text-sm text-gray-600">
-                            Kirim antara 06:45 - 07:00 WIB
+                            Kirim antara 06:45 - 06:55 WIB
                           </p>
                         </div>
                       </div>
