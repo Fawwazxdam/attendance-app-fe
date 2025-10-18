@@ -6,9 +6,11 @@ import { motion } from 'framer-motion';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+   const { user } = useAuth();
+   const router = useRouter();
 
   // Fetch dashboard stats
   const { data: statsData, error: statsError, isLoading: statsLoading } = useSWR('/dashboard/stats', {
@@ -431,6 +433,7 @@ export default function Dashboard() {
           </h3>
           <div className="space-y-3">
             <motion.button
+              onClick={() => router.push('/attendance')}
               className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -448,6 +451,7 @@ export default function Dashboard() {
 
             {(user?.role === 'teacher' || user?.role === 'administrator') && (
               <motion.button
+                onClick={() => router.push('/report')}
                 className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-green-50 hover:border-green-200 transition-all duration-200 group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -466,6 +470,7 @@ export default function Dashboard() {
 
             {(user?.role === 'teacher' || user?.role === 'administrator') && (
               <motion.button
+                onClick={() => router.push('/students')}
                 className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-purple-50 hover:border-purple-200 transition-all duration-200 group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
