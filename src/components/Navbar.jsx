@@ -173,7 +173,7 @@ export default function Navbar() {
                           handleLogout();
                           setIsDropdownOpen(false);
                         }}
-                        className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-200 rounded-lg mx-2"
+                        className="flex items-center w-44 space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-200 rounded-lg mx-2"
                       >
                         <LogOut className="h-4 w-4" />
                         <span>Keluar</span>

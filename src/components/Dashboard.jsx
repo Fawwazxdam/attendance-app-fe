@@ -22,9 +22,9 @@ export default function Dashboard() {
   });
 
   // Fetch role-specific data
-  const dashboardEndpoint = user?.role === 'student' ? `/dashboard/student/${user.student?.id}` :
-                           user?.role === 'teacher' ? `/dashboard/teacher/${user.teacher?.id}` :
-                           user?.role === 'administrator' ? '/dashboard/admin' : null;
+  const dashboardEndpoint = user?.role === 'student' ? `/dashboard/student/${user.student?.id || user.id}` :
+                            user?.role === 'teacher' ? `/dashboard/teacher/${user.teacher?.id || user.id}` :
+                            user?.role === 'administrator' ? '/dashboard/admin' : null;
 
   const { data: roleData, error: roleError, isLoading: roleLoading } = useSWR(
     dashboardEndpoint,
@@ -40,6 +40,16 @@ export default function Dashboard() {
   // Fetch chart data
   const { data: trendData, error: trendError } = useSWR('/charts/attendance-trend?period=month&limit=6');
   const { data: classData, error: classError } = useSWR('/charts/class-performance');
+
+  // Fetch student attendance chart data (only for students)
+  const { data: studentChartData, error: studentChartError } = useSWR(
+    user?.role === 'student' && (user?.student?.id || user?.id) ? `/charts/student-attendance/${user.student?.id || user.id}?period=month&limit=6` : null,
+    {
+      onError: (error) => {
+        console.error('Student chart error:', error);
+      }
+    }
+  );
 
   // Prepare stats for display
   const stats = statsData?.success ? [
@@ -265,6 +275,51 @@ export default function Dashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </motion.div>
+        )}
+
+        {/* Student Attendance Chart */}
+        {user?.role === 'student' && (
+          <motion.div
+            className="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
+              Trend Kehadiran 6 Bulan Terakhir
+            </h3>
+            {studentChartData?.success ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={studentChartData.data.datasets[0].data.map((value, index) => ({
+                    bulan: studentChartData.data.labels[index],
+                    hadir: value,
+                    terlambat: studentChartData.data.datasets[1].data[index],
+                    tidakHadir: studentChartData.data.datasets[2].data[index]
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="bulan" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="hadir" stroke="#10B981" strokeWidth={2} name="Hadir" />
+                    <Line type="monotone" dataKey="terlambat" stroke="#F59E0B" strokeWidth={2} name="Terlambat" />
+                    <Line type="monotone" dataKey="tidakHadir" stroke="#EF4444" strokeWidth={2} name="Tidak Hadir" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Memuat data grafik...</p>
+                  {studentChartError && (
+                    <p className="text-sm text-red-500 mt-1">Error: {studentChartError.message}</p>
+                  )}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
