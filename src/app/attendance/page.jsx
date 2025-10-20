@@ -188,10 +188,13 @@ const handleSubmit = async (e) => {
   try {
     const submitData = new FormData();
     
-    // Tambahkan remarks
-    if (formData.remarks) {
-      submitData.append("remarks", formData.remarks);
+    // Tambahkan remarks (required)
+    if (!formData.remarks || formData.remarks.trim() === "") {
+      alert("Catatan wajib diisi");
+      setLoading(false);
+      return;
     }
+    submitData.append("remarks", formData.remarks);
 
     // Validasi dan tambahkan foto
     if (formData.photo) {
@@ -490,7 +493,7 @@ const handleSubmit = async (e) => {
 
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Catatan (Opsional)
+                        Catatan <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-gray-900" />
@@ -502,16 +505,20 @@ const handleSubmit = async (e) => {
                               remarks: e.target.value,
                             })
                           }
-                          placeholder="Tambahkan catatan tentang kehdiran Anda..."
+                          placeholder="Tambahkan catatan tentang kehadiran Anda..."
                           className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900"
                           rows={4}
+                          required
                         />
                       </div>
+                      {formData.remarks.trim() === "" && (
+                        <p className="text-red-500 text-xs mt-1">Catatan wajib diisi</p>
+                      )}
                     </div>
 
                     <button
                       type="submit"
-                      disabled={loading || !formData.photo}
+                      disabled={loading || !formData.photo || !formData.remarks.trim()}
                       className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                       {loading ? (
