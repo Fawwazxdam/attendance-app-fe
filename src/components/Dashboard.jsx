@@ -43,13 +43,14 @@ export default function Dashboard() {
 
   // Fetch student attendance chart data (only for students)
   const { data: studentChartData, error: studentChartError } = useSWR(
-    user?.role === 'student' && (user?.student?.id || user?.id) ? `/charts/student-attendance/${user.student?.id || user.id}?period=month&limit=6` : null,
+    user?.role === 'student' && (user?.student?.id || user?.id) ? `/charts/student-attendance/${user.student?.id || user.id}?period=day&limit=7` : null,
     {
       onError: (error) => {
         console.error('Student chart error:', error);
       }
     }
   );
+  console.log("STATS DATA:", statsData);
 
   // Prepare stats for display
   const stats = statsData?.success ? [
@@ -288,25 +289,67 @@ export default function Dashboard() {
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <TrendingUp className="h-5 w-5 text-blue-600 mr-2" />
-              Trend Kehadiran 6 Bulan Terakhir
+              Trend Kehadiran 7 Hari Terakhir
             </h3>
+            <div className="mb-4 text-center">
+                  {(() => {
+                    const totalPoints = roleData?.data?.personal_stats?.total_points || 0;
+                    if (totalPoints >= 15) {
+                      return (
+                        <p className="text-green-600 font-medium">
+                          🌿 Hebat! Disiplinmu keren banget, pertahankan ya! 💪
+                        </p>
+                      );
+                    } else if (totalPoints >= 5) {
+                      return (
+                        <p className="text-blue-600 font-medium">
+                          🎗️ Mantap! Udah bagus, tinggal lebih konsisten aja 😊
+                        </p>
+                      );
+                    } else if (totalPoints <= -10) {
+                      return (
+                        <p className="text-red-600 font-medium">
+                          🚨 Semangat! Yuk perbaiki besok biar makin disiplin 💪
+                        </p>
+                      );
+                    } else {
+                      return (
+                        <p className="text-gray-600 font-medium">
+                          📈 Tetap semangat! Setiap hari adalah kesempatan untuk menjadi lebih baik.
+                        </p>
+                      );
+                    }
+                  })()}
+            </div>
             {studentChartData?.success ? (
-              <div className="h-64">
+              <div className="h-64 text-black">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={studentChartData.data.datasets[0].data.map((value, index) => ({
-                    bulan: studentChartData.data.labels[index],
-                    hadir: value,
-                    terlambat: studentChartData.data.datasets[1].data[index],
-                    tidakHadir: studentChartData.data.datasets[2].data[index]
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="bulan" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="hadir" stroke="#10B981" strokeWidth={2} name="Hadir" />
-                    <Line type="monotone" dataKey="terlambat" stroke="#F59E0B" strokeWidth={2} name="Terlambat" />
-                    <Line type="monotone" dataKey="tidakHadir" stroke="#EF4444" strokeWidth={2} name="Tidak Hadir" />
-                  </LineChart>
+                      hari: studentChartData.data.labels[index],
+                      hadir: value,
+                      terlambat: studentChartData.data.datasets[1].data[index],
+                      tidakHadir: studentChartData.data.datasets[2].data[index],
+                      presentTimes: studentChartData.data.datasets[0].data[index]?.present_times || [],
+                      lateTimes: studentChartData.data.datasets[0].data[index]?.late_times || []
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="hari" />
+                      <YAxis />
+                      <Tooltip
+                        formatter={(value, name, props) => {
+                          if (name === 'Hadir' && props.payload.presentTimes?.length > 0) {
+                            return [`${value} (${props.payload.presentTimes.join(', ')})`, name];
+                          }
+                          if (name === 'Terlambat' && props.payload.lateTimes?.length > 0) {
+                            return [`${value} (${props.payload.lateTimes.join(', ')})`, name];
+                          }
+                          return [value, name];
+                        }}
+                      />
+                      <Line type="monotone" dataKey="hadir" stroke="#10B981" strokeWidth={2} name="Hadir" />
+                      <Line type="monotone" dataKey="terlambat" stroke="#F59E0B" strokeWidth={2} name="Terlambat" />
+                      <Line type="monotone" dataKey="tidakHadir" stroke="#EF4444" strokeWidth={2} name="Tidak Hadir" />
+                    </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
