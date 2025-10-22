@@ -25,7 +25,7 @@ export default function StudentDisciplinePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [filters, setFilters] = useState({
-    date: new Date().toISOString().split("T")[0], // Today's date
+    date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), // Today's date in Jakarta time
     status: "",
     grade_id: "",
   });
@@ -104,7 +104,7 @@ export default function StudentDisciplinePage() {
 
   const resetFilters = () => {
     setFilters({
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
       status: "",
       grade_id: "",
     });
@@ -219,7 +219,7 @@ export default function StudentDisciplinePage() {
                   type="date"
                   value={filters.date}
                   onChange={(e) => handleFilterChange("date", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
 
@@ -230,7 +230,7 @@ export default function StudentDisciplinePage() {
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange("status", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Semua Status</option>
                   <option value="present">Hadir</option>
@@ -249,7 +249,7 @@ export default function StudentDisciplinePage() {
                   onChange={(e) =>
                     handleFilterChange("grade_id", e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Semua Kelas</option>
                   {grades.map((grade) => (

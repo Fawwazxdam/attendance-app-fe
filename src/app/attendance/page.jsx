@@ -17,10 +17,10 @@ import {
   X,
 } from "lucide-react";
 import api from "@/services/api";
-import useSWR from 'swr';
-import toast from 'react-hot-toast';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import useSWR from "swr";
+import toast from "react-hot-toast";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -58,7 +58,9 @@ export default function AttendancePage() {
         const today = new Date().toISOString().split("T")[0];
         const response = await api.get(`/attendances?date=${today}`);
         // Handle both response formats: attendance (students) and attendances (admins)
-        const attendance = response.data.attendance || (response.data.attendances && response.data.attendances[0]);
+        const attendance =
+          response.data.attendance ||
+          (response.data.attendances && response.data.attendances[0]);
         if (attendance) {
           setAttendanceData(attendance);
           setAlreadyAttended(true);
@@ -131,15 +133,19 @@ export default function AttendancePage() {
     }
   };
 
-const startCamera = async () => {
-    setCameraLoading(true);
+  const startCamera = async () => {
     try {
       // Check if mediaDevices is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error("Browser Anda tidak mendukung akses kamera. Silakan gunakan browser terbaru.");
-        setCameraLoading(false);
+        toast.error(
+          "Browser Anda tidak mendukung akses kamera. Silakan gunakan browser terbaru."
+        );
         return;
       }
+
+      // Show camera UI first
+      setShowCamera(true);
+      setCameraLoading(true);
 
       let constraints = { video: { facingMode: "environment" } }; // Try back camera first
       let mediaStream;
@@ -147,77 +153,69 @@ const startCamera = async () => {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (backCameraError) {
-        console.warn("Back camera not available, trying front camera:", backCameraError);
+        console.warn(
+          "Back camera not available, trying front camera:",
+          backCameraError
+        );
         // Fallback to front camera
         constraints = { video: { facingMode: "user" } };
-        try {
-          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (frontCameraError) {
-          console.error("Error accessing both cameras:", frontCameraError);
-          throw frontCameraError;
-        }
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       }
 
       setStream(mediaStream);
-      setShowCamera(true);
 
-      // Wait for next tick to ensure DOM is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Wait for video element to be ready and set srcObject
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-
-        // Wait for video to load metadata and start playing
-        await new Promise((resolve, reject) => {
-          videoRef.current.onloadedmetadata = async () => {
-            try {
-              await videoRef.current.play();
-              console.log("Video started successfully");
-              resolve();
-            } catch (playError) {
-              console.error("Error playing video:", playError);
-              toast.error("Gagal memutar video kamera. Silakan coba lagi.");
-              reject(playError);
-            }
+      // Wait for video element to be in DOM
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current
+              .play()
+              .then(() => {
+                console.log("Video started successfully");
+                setCameraLoading(false);
+              })
+              .catch((playError) => {
+                console.error("Error playing video:", playError);
+                toast.error("Gagal memutar video kamera.");
+                setCameraLoading(false);
+                stopCamera();
+              });
           };
-
-          // Handle video errors
-          videoRef.current.onerror = (e) => {
-            console.error("Video element error:", e);
-            toast.error("Terjadi kesalahan saat memuat kamera. Silakan coba lagi.");
-            reject(e);
-          };
-
-          // Timeout after 10 seconds
-          setTimeout(() => reject(new Error("Video loading timeout")), 10000);
-        });
-
-        // Only set loading to false after video is actually playing
-        setCameraLoading(false);
-      }
+        } else {
+          console.error("Video ref not available");
+          toast.error("Video element tidak tersedia");
+          setCameraLoading(false);
+          stopCamera();
+        }
+      }, 300);
     } catch (error) {
       console.error("Error accessing camera:", error);
 
       let errorMessage = "Gagal mengakses kamera. ";
 
       if (error.name === "NotAllowedError") {
-        errorMessage += "Pastikan Anda memberikan izin akses kamera di browser.";
+        errorMessage +=
+          "Pastikan Anda memberikan izin akses kamera di browser.";
       } else if (error.name === "NotFoundError") {
         errorMessage += "Tidak ada kamera yang ditemukan di perangkat Anda.";
       } else if (error.name === "NotReadableError") {
-        errorMessage += "Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi lain yang menggunakan kamera.";
+        errorMessage += "Kamera sedang digunakan oleh aplikasi lain.";
       } else if (error.name === "OverconstrainedError") {
         errorMessage += "Kamera tidak mendukung pengaturan yang diminta.";
       } else if (error.name === "SecurityError") {
-        errorMessage += "Akses kamera diblokir karena masalah keamanan. Pastikan situs menggunakan HTTPS.";
+        errorMessage +=
+          "Akses kamera diblokir. Pastikan situs menggunakan HTTPS.";
       } else {
-        errorMessage += "Silakan periksa pengaturan kamera dan coba lagi.";
+        errorMessage += "Silakan coba lagi.";
       }
 
       toast.error(errorMessage);
       setCameraLoading(false);
-      stopCamera(); // Clean up on error
+      setShowCamera(false);
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+      }
     }
   };
 
@@ -242,13 +240,18 @@ const startCamera = async () => {
 
       canvas.toBlob(
         (blob) => {
-          const file = new File([blob], "camera-photo.jpg", {
-            type: "image/jpeg",
-          });
-          setFormData({ ...formData, photo: file });
-          const previewUrl = URL.createObjectURL(file);
-          setPhotoPreview(previewUrl);
-          stopCamera();
+          if (blob) {
+            const file = new File([blob], "camera-photo.jpg", {
+              type: "image/jpeg",
+            });
+            setFormData({ ...formData, photo: file });
+            const previewUrl = URL.createObjectURL(file);
+            setPhotoPreview(previewUrl);
+            stopCamera();
+          } else {
+            toast.error("Gagal mengambil foto. Silakan coba lagi.");
+            stopCamera();
+          }
         },
         "image/jpeg",
         0.8
@@ -256,90 +259,91 @@ const startCamera = async () => {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const submitData = new FormData();
-    
-    // Tambahkan remarks (required)
-    if (!formData.remarks || formData.remarks.trim() === "") {
-      alert("Catatan wajib diisi");
-      setLoading(false);
-      return;
-    }
-    submitData.append("remarks", formData.remarks);
+    try {
+      const submitData = new FormData();
 
-    // Validasi dan tambahkan foto
-    if (formData.photo) {
-      // Pastikan formData.photo adalah File object, bukan string
-      if (formData.photo instanceof File) {
-        submitData.append("images[]", formData.photo);
-      } else {
-        throw new Error("Invalid photo format");
+      // Tambahkan remarks (required)
+      if (!formData.remarks || formData.remarks.trim() === "") {
+        alert("Catatan wajib diisi");
+        setLoading(false);
+        return;
       }
-    } else {
-      alert("Please take or upload a photo before submitting");
-      setLoading(false);
-      return;
-    }
+      submitData.append("remarks", formData.remarks);
 
-    // Debug: Log FormData contents
-    console.log("FormData contents:");
-    for (let pair of submitData.entries()) {
-      console.log(pair[0], pair[1]);
-    }
-
-    const response = await api.post("/attendances", submitData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    setAttendanceData(response.data.attendance);
-    setSubmitted(true);
-    setAlreadyAttended(true);
-    setAttendanceTime(new Date(response.data.attendance.created_at));
-
-    // Set success modal data and show modal
-    setSuccessData({
-      time: new Date(response.data.attendance.created_at),
-      status: response.data.attendance.status,
-    });
-    setShowSuccessModal(true);
-
-    // Clear form
-    setFormData({ remarks: "", photo: null });
-    setPhotoPreview(null);
-    
-  } catch (error) {
-    console.error("Error submitting attendance:", error);
-    console.error("Error response:", error.response?.data);
-    console.error("Error status:", error.response?.status);
-
-    if (error.response?.status === 409) {
-      toast.error("Anda sudah absen hari ini");
-    } else if (error.response?.status === 404) {
-      toast.error("Data siswa tidak ditemukan");
-    } else if (error.response?.status === 422) {
-      const errorMsg = error.response?.data?.message || "Validasi gagal";
-      const errors = error.response?.data?.errors;
-      if (errors) {
-        const errorList = Object.values(errors).flat().join(", ");
-        toast.error(`${errorMsg}: ${errorList}`);
+      // Validasi dan tambahkan foto
+      if (formData.photo) {
+        // Pastikan formData.photo adalah File object, bukan string
+        if (formData.photo instanceof File) {
+          submitData.append("images[]", formData.photo);
+        } else {
+          throw new Error("Invalid photo format");
+        }
       } else {
-        toast.error(errorMsg);
+        alert("Please take or upload a photo before submitting");
+        setLoading(false);
+        return;
       }
-    } else if (error.response?.status === 500) {
-      toast.error("Terjadi kesalahan server. Silakan coba lagi atau hubungi administrator.");
-    } else {
-      toast.error("Gagal mengirim absensi. Silakan coba lagi.");
+
+      // Debug: Log FormData contents
+      console.log("FormData contents:");
+      for (let pair of submitData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      const response = await api.post("/attendances", submitData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setAttendanceData(response.data.attendance);
+      setSubmitted(true);
+      setAlreadyAttended(true);
+      setAttendanceTime(new Date(response.data.attendance.created_at));
+
+      // Set success modal data and show modal
+      setSuccessData({
+        time: new Date(response.data.attendance.created_at),
+        status: response.data.attendance.status,
+      });
+      setShowSuccessModal(true);
+
+      // Clear form
+      setFormData({ remarks: "", photo: null });
+      setPhotoPreview(null);
+    } catch (error) {
+      console.error("Error submitting attendance:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+
+      if (error.response?.status === 409) {
+        toast.error("Anda sudah absen hari ini");
+      } else if (error.response?.status === 404) {
+        toast.error("Data siswa tidak ditemukan");
+      } else if (error.response?.status === 422) {
+        const errorMsg = error.response?.data?.message || "Validasi gagal";
+        const errors = error.response?.data?.errors;
+        if (errors) {
+          const errorList = Object.values(errors).flat().join(", ");
+          toast.error(`${errorMsg}: ${errorList}`);
+        } else {
+          toast.error(errorMsg);
+        }
+      } else if (error.response?.status === 500) {
+        toast.error(
+          "Terjadi kesalahan server. Silakan coba lagi atau hubungi administrator."
+        );
+      } else {
+        toast.error("Gagal mengirim absensi. Silakan coba lagi.");
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (pageLoading) {
     return (
@@ -351,7 +355,11 @@ const handleSubmit = async (e) => {
               <div className="mb-8 text-center">
                 <Skeleton height={48} width={300} className="mx-auto mb-3" />
                 <Skeleton height={24} width={250} className="mx-auto" />
-                <Skeleton height={6} width={96} className="mx-auto mt-4 rounded-full" />
+                <Skeleton
+                  height={6}
+                  width={96}
+                  className="mx-auto mt-4 rounded-full"
+                />
               </div>
 
               {/* Time Display Skeleton */}
@@ -380,7 +388,11 @@ const handleSubmit = async (e) => {
                   </div>
                   <div className="p-6">
                     <Skeleton height={20} width={120} className="mb-2" />
-                    <Skeleton height={48} width="100%" className="mb-6 rounded-lg" />
+                    <Skeleton
+                      height={48}
+                      width="100%"
+                      className="mb-6 rounded-lg"
+                    />
                     <Skeleton height={20} width={100} className="mb-2" />
                     <div className="flex space-x-2 mb-6">
                       <Skeleton height={48} width="50%" />
@@ -477,7 +489,9 @@ const handleSubmit = async (e) => {
                   <h2 className="text-xl font-semibold text-white mb-2">
                     Kirim Kehadiran
                   </h2>
-                  <p className="text-blue-100">Tandai kehadiran Anda hari ini</p>
+                  <p className="text-blue-100">
+                    Tandai kehadiran Anda hari ini
+                  </p>
                 </div>
 
                 {!submitted && !alreadyAttended ? (
@@ -493,7 +507,9 @@ const handleSubmit = async (e) => {
                               <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center">
                                 <div className="text-center">
                                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                  <p className="text-gray-600 text-sm">Memuat kamera...</p>
+                                  <p className="text-gray-600 text-sm">
+                                    Memuat kamera...
+                                  </p>
                                 </div>
                               </div>
                             ) : (
@@ -502,7 +518,9 @@ const handleSubmit = async (e) => {
                                 autoPlay
                                 playsInline
                                 muted
+                                controls={false}
                                 className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                style={{ transform: "scaleX(-1)" }} // Mirror effect for selfie camera
                               />
                             )}
                             <canvas ref={canvasRef} className="hidden" />
@@ -599,13 +617,17 @@ const handleSubmit = async (e) => {
                         />
                       </div>
                       {formData.remarks.trim() === "" && (
-                        <p className="text-red-500 text-xs mt-1">Catatan wajib diisi</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          Catatan wajib diisi
+                        </p>
                       )}
                     </div>
 
                     <button
                       type="submit"
-                      disabled={loading || !formData.photo || !formData.remarks.trim()}
+                      disabled={
+                        loading || !formData.photo || !formData.remarks.trim()
+                      }
                       className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                       {loading ? (
@@ -740,7 +762,9 @@ const handleSubmit = async (e) => {
                       <div className="flex items-start space-x-3">
                         <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                         <div>
-                          <h4 className="font-medium text-gray-900">Toleransi</h4>
+                          <h4 className="font-medium text-gray-900">
+                            Toleransi
+                          </h4>
                           <p className="text-sm text-gray-600">
                             Kirim antara 06:45 - 06:55 WIB
                           </p>
@@ -749,7 +773,9 @@ const handleSubmit = async (e) => {
                       <div className="flex items-start space-x-3">
                         <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                         <div>
-                          <h4 className="font-medium text-gray-900">Terlambat</h4>
+                          <h4 className="font-medium text-gray-900">
+                            Terlambat
+                          </h4>
                           <p className="text-sm text-gray-600">
                             Kirim setelah 07:00 WIB
                           </p>
@@ -759,8 +785,9 @@ const handleSubmit = async (e) => {
 
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm text-blue-800">
-                        <strong>Catatan:</strong> Anda hanya dapat mengirim absensi
-                        sekali per hari. Pastikan untuk mengirim tepat waktu!
+                        <strong>Catatan:</strong> Anda hanya dapat mengirim
+                        absensi sekali per hari. Pastikan untuk mengirim tepat
+                        waktu!
                       </p>
                     </div>
                   </div>
@@ -790,16 +817,33 @@ const handleSubmit = async (e) => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-medium">Waktu:</span>
                 <span className="text-gray-900">
-                  {successData?.time ? `${successData.time.getHours().toString().padStart(2, '0')} : ${successData.time.getMinutes().toString().padStart(2, '0')} : ${successData.time.getSeconds().toString().padStart(2, '0')}` : 'N/A'}
+                  {successData?.time
+                    ? `${successData.time
+                        .getHours()
+                        .toString()
+                        .padStart(2, "0")} : ${successData.time
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, "0")} : ${successData.time
+                        .getSeconds()
+                        .toString()
+                        .padStart(2, "0")}`
+                    : "N/A"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 font-medium">Status:</span>
-                <span className={`font-semibold capitalize ${
-                  successData?.status === 'present' ? 'text-green-600' :
-                  successData?.status === 'excused' ? 'text-yellow-600' :
-                  successData?.status === 'late' ? 'text-red-600' : 'text-gray-600'
-                }`}>
+                <span
+                  className={`font-semibold capitalize ${
+                    successData?.status === "present"
+                      ? "text-green-600"
+                      : successData?.status === "excused"
+                      ? "text-yellow-600"
+                      : successData?.status === "late"
+                      ? "text-red-600"
+                      : "text-gray-600"
+                  }`}
+                >
                   {successData?.status}
                 </span>
               </div>
