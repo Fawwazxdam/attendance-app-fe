@@ -131,12 +131,13 @@ export default function AttendancePage() {
     }
   };
 
-  const startCamera = async () => {
+const startCamera = async () => {
     setCameraLoading(true);
     try {
       // Check if mediaDevices is supported
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         toast.error("Browser Anda tidak mendukung akses kamera. Silakan gunakan browser terbaru.");
+        setCameraLoading(false);
         return;
       }
 
@@ -160,23 +161,40 @@ export default function AttendancePage() {
       setStream(mediaStream);
       setShowCamera(true);
 
+      // Wait for next tick to ensure DOM is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Wait for video element to be ready and set srcObject
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
 
         // Wait for video to load metadata and start playing
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch((playError) => {
-            console.error("Error playing video:", playError);
-            toast.error("Gagal memutar video kamera. Silakan coba lagi.");
-          });
-        };
+        await new Promise((resolve, reject) => {
+          videoRef.current.onloadedmetadata = async () => {
+            try {
+              await videoRef.current.play();
+              console.log("Video started successfully");
+              resolve();
+            } catch (playError) {
+              console.error("Error playing video:", playError);
+              toast.error("Gagal memutar video kamera. Silakan coba lagi.");
+              reject(playError);
+            }
+          };
 
-        // Handle video errors
-        videoRef.current.onerror = (e) => {
-          console.error("Video element error:", e);
-          toast.error("Terjadi kesalahan saat memuat kamera. Silakan coba lagi.");
-        };
+          // Handle video errors
+          videoRef.current.onerror = (e) => {
+            console.error("Video element error:", e);
+            toast.error("Terjadi kesalahan saat memuat kamera. Silakan coba lagi.");
+            reject(e);
+          };
+
+          // Timeout after 10 seconds
+          setTimeout(() => reject(new Error("Video loading timeout")), 10000);
+        });
+
+        // Only set loading to false after video is actually playing
+        setCameraLoading(false);
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
@@ -198,8 +216,8 @@ export default function AttendancePage() {
       }
 
       toast.error(errorMessage);
-    } finally {
       setCameraLoading(false);
+      stopCamera(); // Clean up on error
     }
   };
 
