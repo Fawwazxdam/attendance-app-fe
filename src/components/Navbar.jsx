@@ -24,7 +24,6 @@ export default function Navbar() {
   const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const settingsDropdownRef = useRef(null);
-  console.log("Current User:", user);
 
   useEffect(() => {
     function handleClickOutside(event) {

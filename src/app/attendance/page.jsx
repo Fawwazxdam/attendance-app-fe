@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Camera,
   Upload,
+  X,
 } from "lucide-react";
 import api from "@/services/api";
 import useSWR from 'swr';
@@ -39,6 +40,7 @@ export default function AttendancePage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  const [cameraLoading, setCameraLoading] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -130,20 +132,74 @@ export default function AttendancePage() {
   };
 
   const startCamera = async () => {
+    setCameraLoading(true);
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }, // Use back camera if available
-      });
+      // Check if mediaDevices is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error("Browser Anda tidak mendukung akses kamera. Silakan gunakan browser terbaru.");
+        return;
+      }
+
+      let constraints = { video: { facingMode: "environment" } }; // Try back camera first
+      let mediaStream;
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (backCameraError) {
+        console.warn("Back camera not available, trying front camera:", backCameraError);
+        // Fallback to front camera
+        constraints = { video: { facingMode: "user" } };
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (frontCameraError) {
+          console.error("Error accessing both cameras:", frontCameraError);
+          throw frontCameraError;
+        }
+      }
+
       setStream(mediaStream);
       setShowCamera(true);
+
+      // Wait for video element to be ready and set srcObject
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+
+        // Wait for video to load metadata and start playing
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().catch((playError) => {
+            console.error("Error playing video:", playError);
+            toast.error("Gagal memutar video kamera. Silakan coba lagi.");
+          });
+        };
+
+        // Handle video errors
+        videoRef.current.onerror = (e) => {
+          console.error("Video element error:", e);
+          toast.error("Terjadi kesalahan saat memuat kamera. Silakan coba lagi.");
+        };
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
-      alert(
-        "Unable to access camera. Please make sure you have granted camera permissions."
-      );
+
+      let errorMessage = "Gagal mengakses kamera. ";
+
+      if (error.name === "NotAllowedError") {
+        errorMessage += "Pastikan Anda memberikan izin akses kamera di browser.";
+      } else if (error.name === "NotFoundError") {
+        errorMessage += "Tidak ada kamera yang ditemukan di perangkat Anda.";
+      } else if (error.name === "NotReadableError") {
+        errorMessage += "Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi lain yang menggunakan kamera.";
+      } else if (error.name === "OverconstrainedError") {
+        errorMessage += "Kamera tidak mendukung pengaturan yang diminta.";
+      } else if (error.name === "SecurityError") {
+        errorMessage += "Akses kamera diblokir karena masalah keamanan. Pastikan situs menggunakan HTTPS.";
+      } else {
+        errorMessage += "Silakan periksa pengaturan kamera dan coba lagi.";
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setCameraLoading(false);
     }
   };
 
@@ -153,6 +209,7 @@ export default function AttendancePage() {
       setStream(null);
     }
     setShowCamera(false);
+    setCameraLoading(false);
   };
 
   const capturePhoto = () => {
@@ -414,29 +471,41 @@ const handleSubmit = async (e) => {
                       <div className="space-y-3">
                         {showCamera && (
                           <div className="relative mb-4">
-                            <video
-                              ref={videoRef}
-                              autoPlay
-                              playsInline
-                              className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                            />
+                            {cameraLoading ? (
+                              <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                  <p className="text-gray-600 text-sm">Memuat kamera...</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                              />
+                            )}
                             <canvas ref={canvasRef} className="hidden" />
-                            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                              <button
-                                type="button"
-                                onClick={capturePhoto}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                              >
-                                Capture
-                              </button>
-                              <button
-                                type="button"
-                                onClick={stopCamera}
-                                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                            {!cameraLoading && (
+                              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={capturePhoto}
+                                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                                >
+                                  Capture
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={stopCamera}
+                                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -455,7 +524,7 @@ const handleSubmit = async (e) => {
                               }}
                               className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
                             >
-                              ✕
+                              <X className="h-4 w-4" />
                             </button>
                           </div>
                         )}
