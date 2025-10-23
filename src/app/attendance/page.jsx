@@ -21,6 +21,7 @@ import useSWR from "swr";
 import toast from "react-hot-toast";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import Webcam from "react-webcam";
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -41,8 +42,7 @@ export default function AttendancePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const [cameraLoading, setCameraLoading] = useState(false);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const webcamRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -133,129 +133,40 @@ export default function AttendancePage() {
     }
   };
 
-  const startCamera = async () => {
-    try {
-      // Check if mediaDevices is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast.error(
-          "Browser Anda tidak mendukung akses kamera. Silakan gunakan browser terbaru."
-        );
-        return;
-      }
-
-      // Show camera UI first
-      setShowCamera(true);
-      setCameraLoading(true);
-
-      let constraints = { video: { facingMode: "environment" } }; // Try back camera first
-      let mediaStream;
-
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (backCameraError) {
-        console.warn(
-          "Back camera not available, trying front camera:",
-          backCameraError
-        );
-        // Fallback to front camera
-        constraints = { video: { facingMode: "user" } };
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      }
-
-      setStream(mediaStream);
-
-      // Wait for video element to be in DOM
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current
-              .play()
-              .then(() => {
-                console.log("Video started successfully");
-                setCameraLoading(false);
-              })
-              .catch((playError) => {
-                console.error("Error playing video:", playError);
-                toast.error("Gagal memutar video kamera.");
-                setCameraLoading(false);
-                stopCamera();
-              });
-          };
-        } else {
-          console.error("Video ref not available");
-          toast.error("Video element tidak tersedia");
-          setCameraLoading(false);
-          stopCamera();
-        }
-      }, 300);
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-
-      let errorMessage = "Gagal mengakses kamera. ";
-
-      if (error.name === "NotAllowedError") {
-        errorMessage +=
-          "Pastikan Anda memberikan izin akses kamera di browser.";
-      } else if (error.name === "NotFoundError") {
-        errorMessage += "Tidak ada kamera yang ditemukan di perangkat Anda.";
-      } else if (error.name === "NotReadableError") {
-        errorMessage += "Kamera sedang digunakan oleh aplikasi lain.";
-      } else if (error.name === "OverconstrainedError") {
-        errorMessage += "Kamera tidak mendukung pengaturan yang diminta.";
-      } else if (error.name === "SecurityError") {
-        errorMessage +=
-          "Akses kamera diblokir. Pastikan situs menggunakan HTTPS.";
-      } else {
-        errorMessage += "Silakan coba lagi.";
-      }
-
-      toast.error(errorMessage);
-      setCameraLoading(false);
-      setShowCamera(false);
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
-      }
-    }
+  const startCamera = () => {
+    setShowCamera(true);
+    setCameraLoading(true);
+    // Set loading to false after a short delay to allow Webcam to initialize
+    setTimeout(() => setCameraLoading(false), 1000);
   };
 
   const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
     setShowCamera(false);
     setCameraLoading(false);
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext("2d");
-
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        // Convert base64 to blob
+        fetch(imageSrc)
+          .then((res) => res.blob())
+          .then((blob) => {
             const file = new File([blob], "camera-photo.jpg", {
               type: "image/jpeg",
             });
             setFormData({ ...formData, photo: file });
-            const previewUrl = URL.createObjectURL(file);
-            setPhotoPreview(previewUrl);
+            setPhotoPreview(imageSrc);
             stopCamera();
-          } else {
+          })
+          .catch((error) => {
+            console.error("Error converting screenshot to file:", error);
             toast.error("Gagal mengambil foto. Silakan coba lagi.");
-            stopCamera();
-          }
-        },
-        "image/jpeg",
-        0.8
-      );
+          });
+      } else {
+        toast.error("Gagal mengambil foto. Silakan coba lagi.");
+      }
     }
   };
 
@@ -513,17 +424,34 @@ export default function AttendancePage() {
                                 </div>
                               </div>
                             ) : (
-                              <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                muted
-                                controls={false}
+                              <Webcam
+                                ref={webcamRef}
+                                audio={false}
+                                screenshotFormat="image/jpeg"
+                                videoConstraints={{
+                                  facingMode: "environment", // Try back camera first
+                                }}
+                                onUserMedia={() => {
+                                  console.log("Camera ready");
+                                  setCameraLoading(false);
+                                }}
+                                onUserMediaError={(error) => {
+                                  console.error("Webcam error:", error);
+                                  let errorMessage = "Gagal mengakses kamera. ";
+                                  if (error.name === "NotAllowedError") {
+                                    errorMessage += "Pastikan Anda memberikan izin akses kamera di browser.";
+                                  } else if (error.name === "NotFoundError") {
+                                    errorMessage += "Tidak ada kamera yang ditemukan di perangkat Anda.";
+                                  } else {
+                                    errorMessage += "Silakan coba lagi.";
+                                  }
+                                  toast.error(errorMessage);
+                                  stopCamera();
+                                }}
                                 className="w-full h-48 object-cover rounded-lg border border-gray-300"
                                 style={{ transform: "scaleX(-1)" }} // Mirror effect for selfie camera
                               />
                             )}
-                            <canvas ref={canvasRef} className="hidden" />
                             {!cameraLoading && (
                               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
                                 <button
