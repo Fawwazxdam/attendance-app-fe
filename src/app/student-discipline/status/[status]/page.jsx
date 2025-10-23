@@ -6,6 +6,7 @@ import { useAuth } from "@/services/authService";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import Modal from "@/components/Modal";
 import {
   ArrowLeft,
   CheckCircle,
@@ -13,6 +14,7 @@ import {
   AlertTriangle,
   Calendar,
   Filter,
+  X,
 } from "lucide-react";
 import useSWR from 'swr';
 import toast from 'react-hot-toast';
@@ -23,6 +25,8 @@ export default function AttendanceStatusPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const status = params.status;
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   // Get query parameters
   const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
@@ -138,6 +142,15 @@ export default function AttendanceStatusPage() {
         console.error('Error completing punishment:', error);
         toast.error('Gagal menandai hukuman selesai');
       }
+    }
+  };
+
+  const handlePhotoClick = (medias) => {
+    console.log('Medias clicked:', medias);
+    console.log('API Base URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+    if (medias && medias.length > 0) {
+      setSelectedPhoto(medias); // Pass all medias array
+      setShowPhotoModal(true);
     }
   };
 
@@ -307,9 +320,12 @@ export default function AttendanceStatusPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.medias && attendance.medias.length > 0 ? (
-                            <span className="text-green-600 font-medium">
+                            <button
+                              onClick={() => handlePhotoClick(attendance.medias)}
+                              className="text-green-600 font-medium hover:text-green-800 hover:underline cursor-pointer"
+                            >
                               ✓ Ada
-                            </span>
+                            </button>
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
@@ -331,6 +347,60 @@ export default function AttendanceStatusPage() {
               </p>
             </div>
           )}
+
+          {/* Photo Modal */}
+          <Modal
+            isOpen={showPhotoModal}
+            onClose={() => {
+              setShowPhotoModal(false);
+              setSelectedPhoto(null);
+            }}
+            title="Foto Absensi"
+          >
+            <div className="text-center">
+              {selectedPhoto && selectedPhoto.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedPhoto.map((media, index) => (
+                    <div key={media.id} className="mb-4">
+                      <img
+                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/storage/${encodeURIComponent(media.path)}`}
+                        alt={`Foto Absensi ${index + 1}`}
+                        className="max-w-full max-h-96 object-contain rounded-lg mx-auto"
+                        onLoad={() => console.log('Image loaded successfully:', media.path)}
+                        onError={(e) => {
+                          console.error('Failed to load image:', media.path);
+                          console.error('Full URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/storage/${encodeURIComponent(media.path)}`);
+                          console.error('Response status:', e.target.status);
+                          console.error('Response headers:', e.target.getAllResponseHeaders?.());
+                          e.target.style.display = 'none';
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'text-red-500 text-sm mt-2';
+                          errorDiv.textContent = 'Gagal memuat gambar';
+                          e.target.parentNode.appendChild(errorDiv);
+                        }}
+                      />
+                      {selectedPhoto.length > 1 && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Foto {index + 1} dari {selectedPhoto.length}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Tidak ada foto yang tersedia</p>
+              )}
+              <button
+                onClick={() => {
+                  setShowPhotoModal(false);
+                  setSelectedPhoto(null);
+                }}
+                className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                Tutup
+              </button>
+            </div>
+          </Modal>
         </div>
       </Layout>
     </ProtectedRoute>
