@@ -310,7 +310,7 @@ export default function StudentDisciplinePage() {
                     <p className="text-blue-100 text-sm font-medium">Hadir</p>
                     <p className="text-2xl font-bold">
                       {
-                        data.attendances.filter((a) => a.status === "present")
+                        data.attendances.filter((a) => a.attendance_status === "present" || a.attendance_status === "excused")
                           .length
                       }
                     </p>
@@ -330,7 +330,7 @@ export default function StudentDisciplinePage() {
                     </p>
                     <p className="text-2xl font-bold">
                       {
-                        data.attendances.filter((a) => a.status === "late")
+                        data.attendances.filter((a) => a.attendance_status === "late")
                           .length
                       }
                     </p>
@@ -350,7 +350,7 @@ export default function StudentDisciplinePage() {
                     </p>
                     <p className="text-2xl font-bold">
                       {
-                        data.attendances.filter((a) => a.status === "absent")
+                        data.attendances.filter((a) => a.attendance_status === "absent")
                           .length
                       }
                     </p>
@@ -415,29 +415,29 @@ export default function StudentDisciplinePage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              attendance.status === "present"
+                              attendance.attendance_status === "present"
                                 ? "bg-green-100 text-green-800"
-                                : attendance.status === "late"
+                                : attendance.attendance_status === "late"
                                 ? "bg-yellow-100 text-yellow-800"
-                                : attendance.status === "excused"
+                                : attendance.attendance_status === "excused"
                                 ? "bg-blue-100 text-blue-800"
                                 : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {attendance.status === "present" ? (
+                            {attendance.attendance_status === "present" ? (
                               <CheckCircle className="h-3 w-3 mr-1" />
-                            ) : attendance.status === "late" ? (
+                            ) : attendance.attendance_status === "late" ? (
                               <Clock className="h-3 w-3 mr-1" />
-                            ) : attendance.status === "excused" ? (
+                            ) : attendance.attendance_status === "excused" ? (
                               <Calendar className="h-3 w-3 mr-1" />
                             ) : (
                               <AlertTriangle className="h-3 w-3 mr-1" />
                             )}
-                            {attendance.status === "present"
+                            {attendance.attendance_status === "present"
                               ? "Hadir"
-                              : attendance.status === "late"
+                              : attendance.attendance_status === "late"
                               ? "Terlambat"
-                              : attendance.status === "excused"
+                              : attendance.attendance_status === "excused"
                               ? "Izin"
                               : "Tidak Hadir"}
                           </span>
@@ -471,7 +471,7 @@ export default function StudentDisciplinePage() {
                           {attendance.remarks || "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.status === 'late' && attendance.punishmentRecords ? (
+                          {attendance.attendance_status === 'late' && attendance.punishmentRecords ? (
                             attendance.punishmentRecords.length > 0 ? (
                               attendance.punishmentRecords.some(record => record.status === 'completed') ? (
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
@@ -492,7 +492,7 @@ export default function StudentDisciplinePage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.status === 'late' && attendance.punishmentRecords && attendance.punishmentRecords.some(record => record.status === 'pending') && (
+                          {attendance.attendance_status === 'late' && attendance.punishmentRecords && attendance.punishmentRecords.some(record => record.status === 'pending') && (
                             <button
                               onClick={() => handleCompletePunishment(attendance.punishmentRecords.find(record => record.status === 'pending').id)}
                               className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"

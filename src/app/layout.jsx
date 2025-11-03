@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Aplikasi Absensi",
-  description: "Dibuat dengan Next.js",
+  title: "Ayo on time !",
+  description: "Aplikasi jurnal kehadiran",
 };
 
 export default function RootLayout({ children }) {

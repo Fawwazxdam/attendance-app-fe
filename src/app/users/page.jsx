@@ -12,6 +12,7 @@ import useSWR from 'swr';
 import toast from 'react-hot-toast';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import api from '@/services/api';
 
 export default function UsersPage() {
   const { user } = useAuth();
@@ -24,6 +25,17 @@ export default function UsersPage() {
     password: '',
     role: 'student'
   });
+
+  // Fetch data using SWR - only fetch if user is administrator
+  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR(
+    user?.role === 'administrator' ? '/users' : null,
+    {
+      onError: (error) => {
+        toast.error('Gagal memuat data pengguna');
+        console.error('Users error:', error);
+      }
+    }
+  );
 
   if (user?.role !== 'administrator') {
     return (
@@ -39,14 +51,6 @@ export default function UsersPage() {
       </ProtectedRoute>
     );
   }
-
-  // Fetch data using SWR
-  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR('/users', {
-    onError: (error) => {
-      toast.error('Gagal memuat data pengguna');
-      console.error('Users error:', error);
-    }
-  });
 
   const users = usersData || [];
   const loading = !usersData;

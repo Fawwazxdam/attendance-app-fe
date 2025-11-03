@@ -172,6 +172,18 @@ export default function AttendancePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if current time is after 12:00 PM (noon)
+    const now = new Date();
+    const jakartaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+    const noon = new Date(jakartaTime);
+    noon.setHours(12, 0, 0, 0);
+
+    if (jakartaTime >= noon) {
+      toast.error("Absensi tidak dapat dilakukan setelah jam 12:00 siang");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -561,12 +573,12 @@ export default function AttendancePage() {
                       {loading ? (
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Mengirim...
+                          Menyimpan...
                         </div>
                       ) : (
                         <div className="flex items-center justify-center">
                           <CheckCircle className="h-5 w-5 mr-2" />
-                          Kirim kehadiran
+                          Simpan kehadiran
                         </div>
                       )}
                     </button>
@@ -594,7 +606,7 @@ export default function AttendancePage() {
                     <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                       <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-green-900 mb-2">
-                        Jurnal kehadiran Dikirim!
+                        Jurnal kehadiran Disimpan!
                       </h3>
                       <p className="text-green-700">
                         Jurnal kehadiran Anda telah dicatat dengan berhasil.
@@ -683,7 +695,7 @@ export default function AttendancePage() {
                         <div>
                           <h4 className="font-medium text-gray-900">Hadir</h4>
                           <p className="text-sm text-gray-600">
-                            Kirim sebelum 06:45 WIB
+                            Absen sebelum jam 06:45 WIB
                           </p>
                         </div>
                       </div>
@@ -694,7 +706,7 @@ export default function AttendancePage() {
                             Toleransi
                           </h4>
                           <p className="text-sm text-gray-600">
-                            Kirim antara 06:45 - 06:55 WIB
+                            Absen antara jam 06:45 - 06:55 WIB
                           </p>
                         </div>
                       </div>
@@ -705,7 +717,7 @@ export default function AttendancePage() {
                             Terlambat
                           </h4>
                           <p className="text-sm text-gray-600">
-                            Kirim setelah 07:00 WIB
+                            Absen setelah jam 07:00 WIB
                           </p>
                         </div>
                       </div>
@@ -714,8 +726,9 @@ export default function AttendancePage() {
                     <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm text-blue-800">
                         <strong>Catatan:</strong> Anda hanya dapat mengirim
-                        absensi sekali per hari. Pastikan untuk mengirim tepat
-                        waktu!
+                        absensi sekali per hari sebelum jam 12:00 siang. Pastikan untuk mengirim tepat
+                        waktu! <br /> Tidak absen sebelum jam 12:00 siang akan
+                        dianggap tidak hadir.
                       </p>
                     </div>
                   </div>

@@ -19,4 +19,34 @@ api.interceptors.request.use(
   }
 );
 
+// Reward Punishment Records API functions
+export const rewardPunishmentRecordsApi = {
+  // Bulk update records to done status
+  bulkUpdateDone: async (recordIds, notes = null) => {
+    const response = await api.post('/reward-punishment-records/bulk-update-done', {
+      record_ids: recordIds,
+      notes: notes
+    });
+    return response.data;
+  },
+
+  // Update single record
+  update: async (id, data) => {
+    const response = await api.put(`/reward-punishment-records/${id}`, data);
+    return response.data;
+  },
+
+  // Get records for teacher
+  index: async () => {
+    const response = await api.get('/reward-punishment-records');
+    return response.data;
+  },
+
+  // Get students with records
+  getStudentsWithRecords: async (params = {}) => {
+    const response = await api.get('/reward-punishment-records/students/list', { params });
+    return response.data;
+  }
+};
+
 export default api;
