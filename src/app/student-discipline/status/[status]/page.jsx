@@ -54,6 +54,7 @@ export default function AttendanceStatusPage() {
   const data = attendanceData;
   const loading = !gradesData || !attendanceData;
   const error = gradesError || attendanceError;
+  console.log('attendance data:', data);
 
   if (user?.role !== "administrator") {
     return (
@@ -125,24 +126,17 @@ export default function AttendanceStatusPage() {
   const handleCompletePunishment = async (recordId) => {
     if (confirm('Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?')) {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reward-punishment-records/${recordId}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: 'done',
-            notes: 'Hukuman telah dieksekusi melalui sistem absensi'
-          }),
+        await rewardPunishmentRecordsApi.update(recordId, {
+          status: 'done',
+          notes: 'Hukuman telah dieksekusi melalui sistem absensi'
         });
 
         toast.success('Hukuman berhasil ditandai selesai');
-        // Re-fetch data by reloading the page
-        window.location.reload();
+        // Re-fetch data using SWR mutate
+        mutate();
       } catch (error) {
         console.error('Error completing punishment:', error);
-        toast.error('Gagal menandai hukuman selesai');
+        toast.error(error.message || 'Gagal menandai hukuman selesai');
       }
     }
   };
@@ -394,7 +388,7 @@ export default function AttendanceStatusPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.attendance_status === 'late' && attendance.punishmentRecords ? (
                             attendance.punishmentRecords.length > 0 ? (
-                              attendance.punishmentRecords.some(record => record.status === 'completed') ? (
+                              attendance.punishmentRecords.some(record => record.status === 'done') ? (
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                   ✓ Selesai
                                 </span>

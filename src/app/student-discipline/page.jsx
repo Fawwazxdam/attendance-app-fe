@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/services/authService";
+import { rewardPunishmentRecordsApi } from "@/services/api";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -121,23 +122,16 @@ export default function StudentDisciplinePage() {
   const handleCompletePunishment = async (recordId) => {
     if (confirm('Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?')) {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reward-punishment-records/${recordId}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: 'done',
-            notes: 'Hukuman telah dieksekusi melalui sistem absensi'
-          }),
+        await rewardPunishmentRecordsApi.update(recordId, {
+          status: 'done',
+          notes: 'Hukuman telah dieksekusi melalui sistem absensi'
         });
 
         toast.success('Hukuman berhasil ditandai selesai');
         mutateAttendance(); // Refresh data
       } catch (error) {
         console.error('Error completing punishment:', error);
-        toast.error('Gagal menandai hukuman selesai');
+        toast.error(error.message || 'Gagal menandai hukuman selesai');
       }
     }
   };
@@ -248,7 +242,7 @@ export default function StudentDisciplinePage() {
                   <option value="">Semua Status</option>
                   <option value="present">Hadir</option>
                   <option value="late">Terlambat</option>
-                  <option value="excused">Izin</option>
+                  <option value="excused">Toleransi</option>
                   <option value="absent">Tidak Hadir</option>
                 </select>
               </div>
@@ -438,7 +432,7 @@ export default function StudentDisciplinePage() {
                               : attendance.attendance_status === "late"
                               ? "Terlambat"
                               : attendance.attendance_status === "excused"
-                              ? "Izin"
+                              ? "Toleransi"
                               : "Tidak Hadir"}
                           </span>
                         </td>
@@ -473,7 +467,7 @@ export default function StudentDisciplinePage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.attendance_status === 'late' && attendance.punishmentRecords ? (
                             attendance.punishmentRecords.length > 0 ? (
-                              attendance.punishmentRecords.some(record => record.status === 'completed') ? (
+                              attendance.punishmentRecords.some(record => record.status === 'done') ? (
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                   ✓ Selesai
                                 </span>

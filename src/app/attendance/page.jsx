@@ -29,6 +29,7 @@ export default function AttendancePage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [attendanceData, setAttendanceData] = useState(null);
+  const [attendancesList, setAttendancesList] = useState([]);
   const [alreadyAttended, setAlreadyAttended] = useState(false);
   const [attendanceTime, setAttendanceTime] = useState(null);
   const [formData, setFormData] = useState({
@@ -58,13 +59,25 @@ export default function AttendancePage() {
         const today = new Date().toISOString().split("T")[0];
         const response = await api.get(`/attendances?date=${today}`);
         // Handle both response formats: attendance (students) and attendances (admins)
-        const attendance =
-          response.data.attendance ||
-          (response.data.attendances && response.data.attendances[0]);
-        if (attendance) {
+        if (response.data.attendance) {
+          // Student response
+          const attendance = response.data.attendance;
           setAttendanceData(attendance);
-          setAlreadyAttended(true);
+          // Allow attendance submission if status is 'absent'
+          setAlreadyAttended(attendance.status !== 'absent');
           setAttendanceTime(new Date(attendance.created_at));
+        } else if (response.data.attendances) {
+          // Admin/Teacher response - list of all attendances
+          const attendances = response.data.attendances;
+          setAttendancesList(attendances);
+          // Check if current user has attended
+          const userAttendance = attendances.find(att => att.student_id === user.student?.id);
+          if (userAttendance) {
+            setAttendanceData(userAttendance);
+            // Allow attendance submission if status is 'absent'
+            setAlreadyAttended(userAttendance.attendance_status !== 'absent');
+            setAttendanceTime(new Date(userAttendance.created_at));
+          }
         }
       } catch (error) {
         // If no attendance found, that's fine
@@ -78,7 +91,7 @@ export default function AttendancePage() {
     };
 
     fetchTodayAttendance();
-  }, []);
+  }, [user]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -225,7 +238,7 @@ export default function AttendancePage() {
 
       setAttendanceData(response.data.attendance);
       setSubmitted(true);
-      setAlreadyAttended(true);
+      setAlreadyAttended(response.data.attendance.status !== 'absent');
       setAttendanceTime(new Date(response.data.attendance.created_at));
 
       // Set success modal data and show modal
@@ -417,7 +430,7 @@ export default function AttendancePage() {
                   </p>
                 </div>
 
-                {!submitted && !alreadyAttended ? (
+                {!submitted && (!alreadyAttended || (attendanceData?.status === 'absent')) ? (
                   <form onSubmit={handleSubmit} className="p-6">
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -588,17 +601,23 @@ export default function AttendancePage() {
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                       <AlertCircle className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-yellow-900 mb-2">
-                        Sudah Absen Hari Ini
+                        {attendanceData?.status === 'absent' ? 'Status Absent - Kirim Ulang Absensi' : 'Sudah Absen Hari Ini'}
                       </h3>
-                      <p className="text-yellow-700">
-                        Kamu sudah absen hari ini pada jam{" "}
-                        {attendanceTime
-                          ? attendanceTime.toLocaleTimeString("id-ID", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "N/A"}
-                      </p>
+                      {attendanceData?.status === 'absent' ? (
+                        <p className="text-yellow-700">
+                          Status Anda saat ini adalah 'absent'. Silakan kirim ulang absensi untuk mengubah status.
+                        </p>
+                      ) : (
+                        <p className="text-yellow-700">
+                          Kamu sudah absen hari ini pada jam{" "}
+                          {attendanceTime
+                            ? attendanceTime.toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "N/A"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -678,61 +697,92 @@ export default function AttendancePage() {
                 </div>
               )}
 
-              {/* Info Card */}
-              {!attendanceData && (
+              {/* Attendance List for Admin/Teacher */}
+              {attendancesList.length > 0 && (user.role === 'administrator' || user.role === 'teacher') ? (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                   <div className="bg-purple-600 p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">
-                      Aturan Absensi
+                      Daftar Kehadiran Siswa
                     </h2>
-                    <p className="text-purple-100">Informasi penting</p>
+                    <p className="text-purple-100">Status kehadiran semua siswa hari ini</p>
                   </div>
 
                   <div className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-start space-x-3">
-                        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">Hadir</h4>
-                          <p className="text-sm text-gray-600">
-                            Absen sebelum jam 06:45 WIB
-                          </p>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {attendancesList.map((attendance) => (
+                        <div key={attendance.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {getStatusIcon(attendance.attendance_status || attendance.status)}
+                            <div>
+                              <p className="font-medium text-gray-900">{attendance.student?.fullname}</p>
+                              <p className="text-sm text-gray-600">{attendance.student?.grade?.name}</p>
+                            </div>
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(attendance.attendance_status || attendance.status)}`}>
+                            {attendance.attendance_status || attendance.status}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-start space-x-3">
-                        <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            Toleransi
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Absen antara jam 06:45 - 06:55 WIB
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-start space-x-3">
-                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            Terlambat
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Absen setelah jam 07:00 WIB
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-sm text-blue-800">
-                        <strong>Catatan:</strong> Anda hanya dapat mengirim
-                        absensi sekali per hari sebelum jam 12:00 siang. Pastikan untuk mengirim tepat
-                        waktu! <br /> Tidak absen sebelum jam 12:00 siang akan
-                        dianggap tidak hadir.
-                      </p>
+                      ))}
                     </div>
                   </div>
                 </div>
+              ) : (
+                /* Info Card for Students */
+                !attendanceData && (
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-purple-600 p-6">
+                      <h2 className="text-xl font-semibold text-white mb-2">
+                        Aturan Absensi
+                      </h2>
+                      <p className="text-purple-100">Informasi penting</p>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start space-x-3">
+                          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Hadir</h4>
+                            <p className="text-sm text-gray-600">
+                              Absen sebelum jam 06:45 WIB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Toleransi
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Absen antara jam 06:45 - 06:55 WIB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Terlambat
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Absen setelah jam 07:00 WIB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-800">
+                          <strong>Catatan:</strong> Anda hanya dapat mengirim
+                          absensi sekali per hari sebelum jam 12:00 siang. Pastikan untuk mengirim tepat
+                          waktu! <br /> Tidak absen sebelum jam 12:00 siang akan
+                          dianggap tidak hadir.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
               )}
             </div>
           </div>

@@ -70,6 +70,11 @@ export default function LoginPage() {
                   Pantau kehadiran siswa, kelola catatan, dan pastikan pelacakan jurnal kehadiran yang akurat.
                 </p>
               </div>
+              <div className="text-white">
+                <p className="text-sm opacity-90">
+                  Untuk panduan penggunaan silahkan klik <a href="https://drive.google.com/file/d/1VZA-cyud4vLX4lAYanyGVPqeVgvKgFaD/view?usp=sharing" className="underline hover:underline" target="_blank"> Link berikut</a>
+                </p>
+              </div>
             </div>
           </div>
 
