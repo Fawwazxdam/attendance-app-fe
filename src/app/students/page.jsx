@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/services/authService";
+import api from "@/services/api";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -26,21 +27,6 @@ export default function StudentsPage() {
     phone_number: "",
     image: "",
   });
-
-  if (user?.role !== 'administrator' && user?.role !== 'teacher') {
-    return (
-      <ProtectedRoute>
-        <Layout>
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Akses Ditolak</h2>
-              <p className="text-gray-600">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
-            </div>
-          </div>
-        </Layout>
-      </ProtectedRoute>
-    );
-  }
 
   // Fetch data using SWR
   const { data: studentsData, error: studentsError, mutate: mutateStudents } = useSWR('/students', {
@@ -191,6 +177,21 @@ export default function StudentsPage() {
     );
   }
 
+  if (!user || (user.role !== 'administrator' && user.role !== 'teacher')) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Akses Ditolak</h2>
+              <p className="text-gray-600">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
+            </div>
+          </div>
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <Layout>
@@ -263,7 +264,7 @@ export default function StudentsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, user_id: e.target.value })
                       }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                       required
                     >
                       <option value="">Pilih Pengguna</option>
@@ -285,7 +286,7 @@ export default function StudentsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, grade_id: e.target.value })
                       }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                       required
                     >
                       <option value="">Pilih Kelas</option>
@@ -306,7 +307,7 @@ export default function StudentsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, birth_date: e.target.value })
                       }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                       required
                     />
                   </div>
@@ -319,7 +320,7 @@ export default function StudentsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, address: e.target.value })
                       }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                       required
                     />
                   </div>
@@ -335,7 +336,7 @@ export default function StudentsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, fullname: e.target.value })
                   }
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                   required
                 />
               </div>
@@ -349,7 +350,7 @@ export default function StudentsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, phone_number: e.target.value })
                   }
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                   required
                 />
               </div>
@@ -358,13 +359,12 @@ export default function StudentsPage() {
                   Gambar
                 </label>
                 <input
-                  type="text"
-                  value={formData.image}
+                  type="file"
+                  accept="image/*"
                   onChange={(e) =>
-                    setFormData({ ...formData, image: e.target.value })
+                    setFormData({ ...formData, image: e.target.files[0] })
                   }
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="path/to/image.jpg"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                 />
               </div>
               <div className="flex justify-end space-x-2">
