@@ -50,9 +50,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
       {/* Left side - Background Image */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div
-          className="w-full h-full bg-cover bg-center bg-no-repeat"
-        >
+        <div className="w-full h-full bg-cover bg-center bg-no-repeat">
           {/* Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/80 via-indigo-600/70 to-purple-700/60"></div>
 
@@ -65,14 +63,25 @@ export default function LoginPage() {
               </div>
 
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 max-w-sm mx-auto">
-                <h3 className="text-lg font-semibold mb-2">Lacak jurnal kehadiran dengan Mudah</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  Lacak jurnal kehadiran dengan Mudah
+                </h3>
                 <p className="text-sm opacity-90">
-                  Pantau kehadiran siswa, kelola catatan, dan pastikan pelacakan jurnal kehadiran yang akurat.
+                  Pantau kehadiran siswa, kelola catatan, dan pastikan pelacakan
+                  jurnal kehadiran yang akurat.
                 </p>
               </div>
-              <div className="text-white">
+              <div className="text-white mt-5 text-sm opacity-90">
                 <p className="text-sm opacity-90">
-                  Untuk panduan penggunaan silahkan klik <a href="https://drive.google.com/file/d/1VZA-cyud4vLX4lAYanyGVPqeVgvKgFaD/view?usp=sharing" className="underline hover:underline" target="_blank"> Link berikut</a>
+                  Untuk panduan penggunaan silahkan klik{" "}
+                  <a
+                    href="https://drive.google.com/file/d/1VZA-cyud4vLX4lAYanyGVPqeVgvKgFaD/view?usp=sharing"
+                    className="underline hover:underline"
+                    target="_blank"
+                  >
+                    {" "}
+                    Link berikut
+                  </a>
                 </p>
               </div>
             </div>
@@ -96,9 +105,7 @@ export default function LoginPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               Selamat datang kembali 👋
             </h2>
-            <p className="text-gray-600">
-              Masuk ke akun Jurnal Kehadiran Anda
-            </p>
+            <p className="text-gray-600">Masuk ke akun Jurnal Kehadiran Anda</p>
           </div>
 
           {/* Login Form */}
@@ -179,7 +186,10 @@ export default function LoginPage() {
                   onChange={(e) => handleCheckboxChange(e.target.checked)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-700"
+                >
                   Ingat saya
                 </label>
               </div>
@@ -213,6 +223,20 @@ export default function LoginPage() {
                 </a>
               </p>
             </div> */}
+          </div>
+
+          <div className="text-center lg:text-left lg:hidden text-gray-600">
+            <p className="text-sm opacity-90">
+              Untuk panduan penggunaan silahkan klik{" "}
+              <a
+                href="https://drive.google.com/file/d/1VZA-cyud4vLX4lAYanyGVPqeVgvKgFaD/view?usp=sharing"
+                className="underline hover:underline"
+                target="_blank"
+              >
+                {" "}
+                Link berikut
+              </a>
+            </p>
           </div>
         </div>
       </div>
