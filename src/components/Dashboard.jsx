@@ -51,6 +51,7 @@ export default function Dashboard() {
     }
   );
   console.log("STATS DATA:", statsData);
+  console.log("ROLE DATA:", roleData);
 
   // Prepare stats for display
   const stats = statsData?.success ? [
@@ -80,14 +81,14 @@ export default function Dashboard() {
       change: statsData.data.today_attendance.absent > 0 ? `-${statsData.data.today_attendance.absent}` : "0",
       changeType: "negative"
     },
-    {
-      title: "Total Kelas",
-      value: statsData.data.total_classes.toString(),
-      icon: Calendar,
-      color: "bg-purple-500",
-      change: "Aktif",
-      changeType: "neutral"
-    },
+    // {
+    //   title: "Total Kelas",
+    //   value: statsData.data.total_classes.toString(),
+    //   icon: Calendar,
+    //   color: "bg-purple-500",
+    //   change: "Aktif",
+    //   changeType: "neutral"
+    // },
   ] : [];
 
   // Loading state

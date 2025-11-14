@@ -635,66 +635,122 @@ export default function AttendancePage() {
                 )}
               </div>
 
-              {/* Attendance Status */}
+              {/* Attendance Status or Info Card for Auto-generated Absent */}
               {attendanceData && (
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="bg-green-600 p-6">
-                    <h2 className="text-xl font-semibold text-white mb-2">
-                      Status kehadiran
-                    </h2>
-                    <p className="text-green-100">Detail kehadiran hari ini</p>
-                  </div>
-
-                  <div className="p-6">
-                    <div
-                      className={`border rounded-lg p-4 mb-4 ${getStatusColor(
-                        attendanceData.status
-                      )}`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        {getStatusIcon(attendanceData.status)}
-                        <div>
-                          <h4 className="font-semibold capitalize">
-                            {attendanceData.status}
-                          </h4>
-                          <p className="text-sm opacity-75">
-                            Status untuk {attendanceData.date}
-                          </p>
-                        </div>
-                      </div>
+                attendanceData.status === 'absent' && attendanceData.remarks === 'Auto-generated absent record' ? (
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-purple-600 p-6">
+                      <h2 className="text-xl font-semibold text-white mb-2">
+                        Aturan Absensi
+                      </h2>
+                      <p className="text-purple-100">Informasi penting</p>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Tanggal</span>
-                        <span className="font-medium text-gray-700">
-                          {attendanceData.date}
-                        </span>
+                    <div className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start space-x-3">
+                          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Hadir</h4>
+                            <p className="text-sm text-gray-600">
+                              Absen sebelum jam 06:45 WIB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Toleransi
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Absen antara jam 06:45 - 07:00 WIB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3">
+                          <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              Terlambat
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              Absen setelah jam 07:00 WIB
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Waktu Dikirim</span>
-                        <span className="font-medium text-gray-700">
-                          {new Date(
-                            attendanceData.created_at
-                          ).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+
+                      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-800">
+                          <strong>Catatan:</strong> Anda hanya dapat mengirim
+                          absensi sekali per hari sebelum jam 12:00 siang. Pastikan untuk mengirim tepat
+                          waktu! <br /> Tidak absen sebelum jam 12:00 siang akan
+                          dianggap tidak hadir.
+                        </p>
                       </div>
-                      {attendanceData.remarks && (
-                        <div className="py-2">
-                          <span className="text-gray-600 block mb-1">
-                            Catatan
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-green-600 p-6">
+                      <h2 className="text-xl font-semibold text-white mb-2">
+                        Status kehadiran
+                      </h2>
+                      <p className="text-green-100">Detail kehadiran hari ini</p>
+                    </div>
+
+                    <div className="p-6">
+                      <div
+                        className={`border rounded-lg p-4 mb-4 ${getStatusColor(
+                          attendanceData.status
+                        )}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          {getStatusIcon(attendanceData.status)}
+                          <div>
+                            <h4 className="font-semibold capitalize">
+                              {attendanceData.status}
+                            </h4>
+                            <p className="text-sm opacity-75">
+                              Status untuk {attendanceData.date}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-gray-600">Tanggal</span>
+                          <span className="font-medium text-gray-700">
+                            {attendanceData.date}
                           </span>
-                          <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">
-                            {attendanceData.remarks}
-                          </p>
                         </div>
-                      )}
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <span className="text-gray-600">Waktu Dikirim</span>
+                          <span className="font-medium text-gray-700">
+                            {new Date(
+                              attendanceData.created_at
+                            ).toLocaleTimeString("id-ID", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        {attendanceData.remarks && (
+                          <div className="py-2">
+                            <span className="text-gray-600 block mb-1">
+                              Catatan
+                            </span>
+                            <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">
+                              {attendanceData.remarks}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )
               )}
 
               {/* Attendance List for Admin/Teacher */}
@@ -755,7 +811,7 @@ export default function AttendancePage() {
                               Toleransi
                             </h4>
                             <p className="text-sm text-gray-600">
-                              Absen antara jam 06:45 - 06:55 WIB
+                              Absen antara jam 06:45 - 07:00 WIB
                             </p>
                           </div>
                         </div>

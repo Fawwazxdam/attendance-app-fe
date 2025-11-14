@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Clock,
   X,
+  Download,
 } from "lucide-react";
 import useSWR from 'swr';
 import toast from 'react-hot-toast';
@@ -113,6 +114,49 @@ export default function StudentDisciplinePage() {
       status: "",
       grade_id: "",
     });
+  };
+
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Token autentikasi tidak ditemukan');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        date: filters.date,
+        ...(filters.status && { status: filters.status }),
+        ...(filters.grade_id && { grade_id: filters.grade_id }),
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/attendances/export?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `attendances_${filters.date}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('File Excel berhasil diunduh');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Gagal mengunduh file Excel');
+    }
   };
 
   const handleStatusCardClick = (status) => {
@@ -268,7 +312,15 @@ export default function StudentDisciplinePage() {
               </div>
             </div>
 
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={handleExport}
+                disabled={!data || !data.attendances || data.attendances.length === 0}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span>Export to Excel</span>
+              </button>
               <button
                 onClick={resetFilters}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
