@@ -20,16 +20,16 @@ import {
   X,
   Download,
 } from "lucide-react";
-import useSWR from 'swr';
-import toast from 'react-hot-toast';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import useSWR from "swr";
+import toast from "react-hot-toast";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 export default function StudentDisciplinePage() {
   const { user } = useAuth();
   const router = useRouter();
   const [filters, setFilters] = useState({
-    date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }), // Today's date in Jakarta time
+    date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" }), // Today's date in Jakarta time
     status: "",
     grade_id: "",
   });
@@ -37,24 +37,30 @@ export default function StudentDisciplinePage() {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   // Fetch data using SWR
-  const { data: gradesData, error: gradesError } = useSWR('/grades', {
+  const { data: gradesData, error: gradesError } = useSWR("/grades", {
     onError: (error) => {
-      toast.error('Gagal memuat data kelas');
-      console.error('Grades error:', error);
-    }
+      toast.error("Gagal memuat data kelas");
+      console.error("Grades error:", error);
+    },
   });
 
-  const attendanceKey = `/attendances?date=${filters.date}${filters.status ? `&status=${filters.status}` : ''}${filters.grade_id ? `&grade_id=${filters.grade_id}` : ''}`;
-  const { data: attendanceData, error: attendanceError, mutate: mutateAttendance } = useSWR(attendanceKey, {
+  const attendanceKey = `/attendances?date=${filters.date}${
+    filters.status ? `&status=${filters.status}` : ""
+  }${filters.grade_id ? `&grade_id=${filters.grade_id}` : ""}`;
+  const {
+    data: attendanceData,
+    error: attendanceError,
+    mutate: mutateAttendance,
+  } = useSWR(attendanceKey, {
     onError: (error) => {
-      toast.error('Gagal memuat data absensi');
-      console.error('Attendance error:', error);
-      console.error('Attendance error response:', error?.response);
-      console.error('Attendance error status:', error?.response?.status);
-      console.error('Attendance error data:', error?.response?.data);
+      toast.error("Gagal memuat data absensi");
+      console.error("Attendance error:", error);
+      console.error("Attendance error response:", error?.response);
+      console.error("Attendance error status:", error?.response?.status);
+      console.error("Attendance error data:", error?.response?.data);
     },
     onSuccess: (data) => {
-      console.log('Attendance success:', data);
+      console.log("Attendance success:", data);
     },
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -72,8 +78,8 @@ export default function StudentDisciplinePage() {
     mutateAttendance();
   }, [filters.date, filters.status, filters.grade_id, mutateAttendance]);
 
-  console.log('Attendance data:', data);
-  console.log('Attendance key:', attendanceKey);
+  console.log("Attendance data:", data);
+  console.log("Attendance key:", attendanceKey);
   if (user?.role !== "administrator") {
     return (
       <ProtectedRoute>
@@ -110,7 +116,9 @@ export default function StudentDisciplinePage() {
 
   const resetFilters = () => {
     setFilters({
-      date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
+      date: new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Jakarta",
+      }),
       status: "",
       grade_id: "",
     });
@@ -118,9 +126,9 @@ export default function StudentDisciplinePage() {
 
   const handleExport = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        toast.error('Token autentikasi tidak ditemukan');
+        toast.error("Token autentikasi tidak ditemukan");
         return;
       }
 
@@ -130,12 +138,15 @@ export default function StudentDisciplinePage() {
         ...(filters.grade_id && { grade_id: filters.grade_id }),
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/attendances/export?${params}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/attendances/export?${params}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -143,8 +154,8 @@ export default function StudentDisciplinePage() {
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
+      const a = document.createElement("a");
+      a.style.display = "none";
       a.href = url;
       a.download = `attendances_${filters.date}.xlsx`;
       document.body.appendChild(a);
@@ -152,37 +163,41 @@ export default function StudentDisciplinePage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success('File Excel berhasil diunduh');
+      toast.success("File Excel berhasil diunduh");
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Gagal mengunduh file Excel');
+      console.error("Export error:", error);
+      toast.error("Gagal mengunduh file Excel");
     }
   };
 
   const handleStatusCardClick = (status) => {
-    router.push(`/student-discipline/status/${status}?date=${filters.date}&grade_id=${filters.grade_id}`);
+    router.push(
+      `/student-discipline/status/${status}?date=${filters.date}&grade_id=${filters.grade_id}`
+    );
   };
 
   const handleCompletePunishment = async (recordId) => {
-    if (confirm('Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?')) {
+    if (
+      confirm("Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?")
+    ) {
       try {
         await rewardPunishmentRecordsApi.update(recordId, {
-          status: 'done',
-          notes: 'Hukuman telah dieksekusi melalui sistem absensi'
+          status: "done",
+          notes: "Hukuman telah dieksekusi melalui sistem absensi",
         });
 
-        toast.success('Hukuman berhasil ditandai selesai');
+        toast.success("Hukuman berhasil ditandai selesai");
         mutateAttendance(); // Refresh data
       } catch (error) {
-        console.error('Error completing punishment:', error);
-        toast.error(error.message || 'Gagal menandai hukuman selesai');
+        console.error("Error completing punishment:", error);
+        toast.error(error.message || "Gagal menandai hukuman selesai");
       }
     }
   };
 
   const handlePhotoClick = (medias) => {
-    console.log('Medias clicked:', medias);
-    console.log('API Base URL:', process.env.NEXT_PUBLIC_API_BASE_URL);
+    console.log("Medias clicked:", medias);
+    console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
     if (medias && medias.length > 0) {
       setSelectedPhoto(medias); // Pass all medias array
       setShowPhotoModal(true);
@@ -315,7 +330,9 @@ export default function StudentDisciplinePage() {
             <div className="flex justify-end space-x-3 mt-4">
               <button
                 onClick={handleExport}
-                disabled={!data || !data.attendances || data.attendances.length === 0}
+                disabled={
+                  !data || !data.attendances || data.attendances.length === 0
+                }
                 className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 <Download className="h-4 w-4" />
@@ -349,15 +366,18 @@ export default function StudentDisciplinePage() {
 
               <div
                 className="bg-blue-600 rounded-xl p-6 text-white cursor-pointer hover:bg-blue-700 transition-all duration-200 transform hover:scale-105"
-                onClick={() => handleStatusCardClick('present')}
+                onClick={() => handleStatusCardClick("present")}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-100 text-sm font-medium">Hadir</p>
                     <p className="text-2xl font-bold">
                       {
-                        data.attendances.filter((a) => a.attendance_status === "present" || a.attendance_status === "excused")
-                          .length
+                        data.attendances.filter(
+                          (a) =>
+                            a.attendance_status === "present" ||
+                            a.attendance_status === "excused"
+                        ).length
                       }
                     </p>
                   </div>
@@ -367,7 +387,7 @@ export default function StudentDisciplinePage() {
 
               <div
                 className="bg-yellow-600 rounded-xl p-6 text-white cursor-pointer hover:bg-yellow-700 transition-all duration-200 transform hover:scale-105"
-                onClick={() => handleStatusCardClick('late')}
+                onClick={() => handleStatusCardClick("late")}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -376,8 +396,9 @@ export default function StudentDisciplinePage() {
                     </p>
                     <p className="text-2xl font-bold">
                       {
-                        data.attendances.filter((a) => a.attendance_status === "late")
-                          .length
+                        data.attendances.filter(
+                          (a) => a.attendance_status === "late"
+                        ).length
                       }
                     </p>
                   </div>
@@ -387,7 +408,7 @@ export default function StudentDisciplinePage() {
 
               <div
                 className="bg-red-600 rounded-xl p-6 text-white cursor-pointer hover:bg-red-700 transition-all duration-200 transform hover:scale-105"
-                onClick={() => handleStatusCardClick('absent')}
+                onClick={() => handleStatusCardClick("absent")}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -396,8 +417,9 @@ export default function StudentDisciplinePage() {
                     </p>
                     <p className="text-2xl font-bold">
                       {
-                        data.attendances.filter((a) => a.attendance_status === "absent")
-                          .length
+                        data.attendances.filter(
+                          (a) => a.attendance_status === "absent"
+                        ).length
                       }
                     </p>
                   </div>
@@ -453,10 +475,13 @@ export default function StudentDisciplinePage() {
                         className="hover:bg-blue-50 transition-all duration-300"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {attendance.student?.fullname || attendance.user?.name || "N/A"}
+                          {attendance.student?.fullname ||
+                            attendance.user?.name ||
+                            "N/A"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.student?.grade?.name || (attendance.user ? "Administrator" : "N/A")}
+                          {attendance.student?.grade?.name ||
+                            (attendance.user ? "Administrator" : "N/A")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -489,37 +514,55 @@ export default function StudentDisciplinePage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(attendance.created_at).toLocaleTimeString(
-                            "id-ID",
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
+                          {attendance.attendance_status != "absent"
+                            ? new Date(
+                                attendance.updated_at
+                              ).toLocaleTimeString("id-ID", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`font-medium ${
-                            attendance.points_earned > 0 ? 'text-green-600' :
-                            attendance.points_earned < 0 ? 'text-red-600' : 'text-gray-600'
-                          }`}>
-                            {attendance.points_earned > 0 ? '+' : ''}{attendance.points_earned || 0}
+                          <span
+                            className={`font-medium ${
+                              attendance.points_earned > 0
+                                ? "text-green-600"
+                                : attendance.points_earned < 0
+                                ? "text-red-600"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {attendance.points_earned > 0 ? "+" : ""}
+                            {attendance.points_earned || 0}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`font-medium ${
-                            (attendance.student?.student_point?.total_points || 0) > 0 ? 'text-green-600' :
-                            (attendance.student?.student_point?.total_points || 0) < 0 ? 'text-red-600' : 'text-gray-600'
-                          }`}>
-                            {attendance.student?.student_point?.total_points || (attendance.user ? 'N/A' : 0)}
+                          <span
+                            className={`font-medium ${
+                              (attendance.student?.student_point
+                                ?.total_points || 0) > 0
+                                ? "text-green-600"
+                                : (attendance.student?.student_point
+                                    ?.total_points || 0) < 0
+                                ? "text-red-600"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {attendance.student?.student_point?.total_points ||
+                              (attendance.user ? "N/A" : 0)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
                           {attendance.remarks || "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.attendance_status === 'late' && attendance.punishmentRecords ? (
+                          {(attendance.attendance_status === "late" || attendance.attendance_status === "absent") &&
+                          attendance.punishmentRecords ? (
                             attendance.punishmentRecords.length > 0 ? (
-                              attendance.punishmentRecords.some(record => record.status === 'done') ? (
+                              attendance.punishmentRecords.some(
+                                (record) => record.status === "done"
+                              ) ? (
                                 <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                   ✓ Selesai
                                 </span>
@@ -538,20 +581,32 @@ export default function StudentDisciplinePage() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {attendance.attendance_status === 'late' && attendance.punishmentRecords && attendance.punishmentRecords.some(record => record.status === 'pending') && (
-                            <button
-                              onClick={() => handleCompletePunishment(attendance.punishmentRecords.find(record => record.status === 'pending').id)}
-                              className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
-                              title="Tandai hukuman selesai"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                          )}
+                          {(attendance.attendance_status === "late" || attendance.attendance_status === "absent") &&
+                            attendance.punishmentRecords &&
+                            attendance.punishmentRecords.some(
+                              (record) => record.status === "pending"
+                            ) && (
+                              <button
+                                onClick={() =>
+                                  handleCompletePunishment(
+                                    attendance.punishmentRecords.find(
+                                      (record) => record.status === "pending"
+                                    ).id
+                                  )
+                                }
+                                className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
+                                title="Tandai hukuman selesai"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                            )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.medias && attendance.medias.length > 0 ? (
                             <button
-                              onClick={() => handlePhotoClick(attendance.medias)}
+                              onClick={() =>
+                                handlePhotoClick(attendance.medias)
+                              }
                               className="text-green-600 font-medium hover:text-green-800 hover:underline cursor-pointer"
                             >
                               ✓ Ada
@@ -594,19 +649,31 @@ export default function StudentDisciplinePage() {
                   {selectedPhoto.map((media, index) => (
                     <div key={media.id} className="mb-4">
                       <img
-                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}/storage/${encodeURIComponent(media.path)}`}
+                        src={`${
+                          process.env.NEXT_PUBLIC_API_BASE_URL
+                        }/storage/${encodeURIComponent(media.path)}`}
                         alt={`Foto Absensi ${index + 1}`}
                         className="max-w-full max-h-96 object-contain rounded-lg mx-auto"
-                        onLoad={() => console.log('Image loaded successfully:', media.path)}
+                        onLoad={() =>
+                          console.log("Image loaded successfully:", media.path)
+                        }
                         onError={(e) => {
-                          console.error('Failed to load image:', media.path);
-                          console.error('Full URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/storage/${encodeURIComponent(media.path)}`);
-                          console.error('Response status:', e.target.status);
-                          console.error('Response headers:', e.target.getAllResponseHeaders?.());
-                          e.target.style.display = 'none';
-                          const errorDiv = document.createElement('div');
-                          errorDiv.className = 'text-red-500 text-sm mt-2';
-                          errorDiv.textContent = 'Gagal memuat gambar';
+                          console.error("Failed to load image:", media.path);
+                          console.error(
+                            "Full URL:",
+                            `${
+                              process.env.NEXT_PUBLIC_API_BASE_URL
+                            }/storage/${encodeURIComponent(media.path)}`
+                          );
+                          console.error("Response status:", e.target.status);
+                          console.error(
+                            "Response headers:",
+                            e.target.getAllResponseHeaders?.()
+                          );
+                          e.target.style.display = "none";
+                          const errorDiv = document.createElement("div");
+                          errorDiv.className = "text-red-500 text-sm mt-2";
+                          errorDiv.textContent = "Gagal memuat gambar";
                           e.target.parentNode.appendChild(errorDiv);
                         }}
                       />

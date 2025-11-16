@@ -65,7 +65,7 @@ export default function AttendancePage() {
           setAttendanceData(attendance);
           // Allow attendance submission if status is 'absent'
           setAlreadyAttended(attendance.status !== 'absent');
-          setAttendanceTime(new Date(attendance.created_at));
+          setAttendanceTime(new Date(attendance.updated_at));
         } else if (response.data.attendances) {
           // Admin/Teacher response - list of all attendances
           const attendances = response.data.attendances;
@@ -76,7 +76,7 @@ export default function AttendancePage() {
             setAttendanceData(userAttendance);
             // Allow attendance submission if status is 'absent'
             setAlreadyAttended(userAttendance.attendance_status !== 'absent');
-            setAttendanceTime(new Date(userAttendance.created_at));
+            setAttendanceTime(new Date(userAttendance.updated_at));
           }
         }
       } catch (error) {
@@ -192,10 +192,10 @@ export default function AttendancePage() {
     const noon = new Date(jakartaTime);
     noon.setHours(12, 0, 0, 0);
 
-    if (jakartaTime >= noon) {
-      toast.error("Absensi tidak dapat dilakukan setelah jam 12:00 siang");
-      return;
-    }
+    // if (jakartaTime >= noon) {
+    //   toast.error("Absensi tidak dapat dilakukan setelah jam 12:00 siang");
+    //   return;
+    // }
 
     setLoading(true);
 
@@ -239,11 +239,11 @@ export default function AttendancePage() {
       setAttendanceData(response.data.attendance);
       setSubmitted(true);
       setAlreadyAttended(response.data.attendance.status !== 'absent');
-      setAttendanceTime(new Date(response.data.attendance.created_at));
+      setAttendanceTime(new Date(response.data.attendance.updated_at_at));
 
       // Set success modal data and show modal
       setSuccessData({
-        time: new Date(response.data.attendance.created_at),
+        time: new Date(response.data.attendance.updated_at),
         status: response.data.attendance.status,
       });
       setShowSuccessModal(true);
@@ -730,7 +730,7 @@ export default function AttendancePage() {
                           <span className="text-gray-600">Waktu Dikirim</span>
                           <span className="font-medium text-gray-700">
                             {new Date(
-                              attendanceData.created_at
+                              attendanceData.updated_at
                             ).toLocaleTimeString("id-ID", {
                               hour: "2-digit",
                               minute: "2-digit",
