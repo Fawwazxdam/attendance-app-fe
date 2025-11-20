@@ -56,30 +56,49 @@ export default function AttendancePage() {
   useEffect(() => {
     const fetchTodayAttendance = async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
+        // Get today's date in Jakarta timezone to match backend timezone
+        const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date());
+        console.log("[DEBUG] Fetching attendance for date:", today);
+        console.log("[DEBUG] Current Jakarta time:", new Date().toLocaleString("id-ID", {timeZone: "Asia/Jakarta"}));
         const response = await api.get(`/attendances?date=${today}`);
+        console.log("[DEBUG] API Response:", response.data);
+
         // Handle both response formats: attendance (students) and attendances (admins)
         if (response.data.attendance) {
           // Student response
           const attendance = response.data.attendance;
+          console.log("[DEBUG] Student attendance found:", attendance);
+          console.log("[DEBUG] Attendance date:", attendance.date);
+          console.log("[DEBUG] Attendance updated_at:", attendance.updated_at);
           setAttendanceData(attendance);
           // Allow attendance submission if status is 'absent'
           setAlreadyAttended(attendance.status !== 'absent');
           setAttendanceTime(new Date(attendance.updated_at));
+          console.log("[DEBUG] Set attendanceTime to:", new Date(attendance.updated_at).toString());
         } else if (response.data.attendances) {
           // Admin/Teacher response - list of all attendances
           const attendances = response.data.attendances;
+          console.log("[DEBUG] Admin attendances list:", attendances);
           setAttendancesList(attendances);
           // Check if current user has attended
           const userAttendance = attendances.find(att => att.student_id === user.student?.id);
           if (userAttendance) {
+            console.log("[DEBUG] User attendance found:", userAttendance);
+            console.log("[DEBUG] User attendance date:", userAttendance.date);
+            console.log("[DEBUG] User attendance updated_at:", userAttendance.updated_at);
             setAttendanceData(userAttendance);
             // Allow attendance submission if status is 'absent'
             setAlreadyAttended(userAttendance.attendance_status !== 'absent');
             setAttendanceTime(new Date(userAttendance.updated_at));
+            console.log("[DEBUG] Set attendanceTime to:", new Date(userAttendance.updated_at).toString());
+          } else {
+            console.log("[DEBUG] No user attendance found in list");
           }
+        } else {
+          console.log("[DEBUG] No attendance data in response");
         }
       } catch (error) {
+        console.log("[DEBUG] Error in fetchTodayAttendance:", error);
         // If no attendance found, that's fine
         if (error.response?.status !== 404) {
           console.error("Error fetching today's attendance:", error);
