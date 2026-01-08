@@ -72,9 +72,9 @@ export default function Navbar() {
         dropdown: true,
         items: [
           { name: "Self Monitoring", href: "/self-monitoring", icon: CheckCircle },
-          { name: "Self Contracting", href: "/self-contracting", icon: CheckCircle },
+          { name: "Self Contracting", href: "/self-contract", icon: CheckCircle },
           { name: "Stimulus Control", href: "/stimulus-control", icon: CheckCircle },
-          { name: "Self Reward", href: "/self-reward", icon: CheckCircle },
+          { name: "Self Reward", href: "/reward", icon: CheckCircle },
         ],
       },
     ];

@@ -1,5 +1,5 @@
 import { useAuth } from "@/services/authService";
-import { Users, Calendar, CheckCircle, Clock, TrendingUp, Award, AlertTriangle } from "lucide-react";
+import { Users, Calendar, CheckCircle, Clock, TrendingUp, Award, AlertTriangle, HeartHandshake } from "lucide-react";
 import useSWR from 'swr';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { motion } from 'framer-motion';
@@ -364,6 +364,31 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* Self Contract Reminder - Only for students */}
+        {user?.role === 'student' && user?.student?.self_contract && (
+          <motion.div
+            className="col-span-1 md:col-span-2 lg:col-span-2 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-6 shadow-lg border border-orange-200 hover:shadow-xl transition-all duration-300 cursor-pointer"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            onClick={() => router.push('/self-contract')}
+            whileHover={{ scale: 1.02 }}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <HeartHandshake className="h-5 w-5 text-orange-600 mr-2" />
+              Self Contract Reminder 💪
+            </h3>
+            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-orange-100">
+              <p className="text-gray-800 italic leading-relaxed">
+                "{user.student.self_contract}"
+              </p>
+            </div>
+            <p className="text-sm text-orange-700 mt-3 font-medium">
+              Klik untuk melihat atau edit kontrak dirimu
+            </p>
           </motion.div>
         )}
 
