@@ -77,7 +77,17 @@ export default function StimulusControlPage() {
         await api.put(`/stimulus-controls/${existingStimulusControl.id}`, {
           value: stimulusControl.trim(),
         });
-        toast.success("Stimulus control berhasil diperbarui!");
+
+        // Reset revision flag if this was a revision
+        if (user.student?.stimulus_control_needs_revision) {
+          await api.put(`/students/${user.student.id}`, {
+            stimulus_control_needs_revision: false,
+          });
+        }
+
+        toast.success(user.student?.stimulus_control_needs_revision ?
+          "Revisi stimulus control berhasil disimpan!" :
+          "Stimulus control berhasil diperbarui!");
       } else {
         await api.post('/stimulus-controls', {
           student_id: user.student.id,
@@ -144,6 +154,9 @@ export default function StimulusControlPage() {
                               Status
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Perlu Revisi
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Stimulus Control
                             </th>
                           </tr>
@@ -176,6 +189,19 @@ export default function StimulusControlPage() {
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                       <Heart className="h-3 w-3 mr-1" />
                                       Belum Dibuat
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {student.stimulus_control_needs_revision ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Perlu Revisi
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Tidak Perlu
                                     </span>
                                   )}
                                 </td>
@@ -242,6 +268,102 @@ export default function StimulusControlPage() {
       <ProtectedRoute>
         <Layout>
           <LoadingSpinner />
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
+  // If stimulus control needs revision, show revision form
+  if (existingStimulusControl && user.student?.stimulus_control_needs_revision) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50 flex items-center justify-center px-4 py-12">
+            <div className="max-w-2xl w-full">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-orange-500 to-red-600 rounded-full mb-6">
+                  <AlertTriangle className="h-10 w-10 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                  Revisi Stimulus Control
+                </h1>
+                <p className="text-lg text-gray-600 leading-relaxed">
+                  Karena Anda telat kemarin, mari kita revisi strategi stimulus control Anda untuk menjadi lebih efektif.
+                </p>
+                <div className="bg-orange-100 border border-orange-200 rounded-lg p-4 mt-4">
+                  <p className="text-orange-800 text-sm">
+                    <strong>Refleksi:</strong> Apa yang menyebabkan Anda telat? Bagaimana kita bisa mencegahnya di masa depan?
+                  </p>
+                </div>
+              </div>
+
+              {/* Form */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6">
+                  <h2 className="text-xl font-semibold text-white">
+                    Revisi Kontrol Stimulus Saya
+                  </h2>
+                  <p className="text-orange-100 mt-1">
+                    Perbaiki strategi Anda berdasarkan pengalaman kemarin
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6">
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Strategi Stimulus Control Saat Ini
+                    </label>
+                    <div className="w-full px-4 py-4 border border-gray-300 rounded-xl bg-gray-50 text-gray-700 text-lg leading-relaxed mb-4">
+                      {existingStimulusControl.value}
+                    </div>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Revisi Strategi (Wajib Diisi)
+                    </label>
+                    <textarea
+                      value={stimulusControl}
+                      onChange={(e) => setStimulusControl(e.target.value)}
+                      className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900 text-lg leading-relaxed"
+                      rows={8}
+                      required
+                      placeholder="Jelaskan apa yang salah dengan strategi sebelumnya dan bagaimana Anda akan memperbaikinya..."
+                    />
+                    {stimulusControl.trim() === "" && (
+                      <p className="text-red-500 text-sm mt-2">
+                        Revisi stimulus control wajib diisi
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || !stimulusControl.trim()}
+                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-4 px-6 rounded-xl hover:from-orange-700 hover:to-red-700 active:from-orange-800 active:to-red-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none font-semibold text-lg"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                        Menyimpan Revisi...
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <CheckCircle className="h-6 w-6 mr-3" />
+                        Simpan Revisi
+                      </div>
+                    )}
+                  </button>
+                </form>
+              </div>
+
+              {/* Footer */}
+              <div className="text-center mt-8">
+                <p className="text-gray-500 text-sm">
+                  Revisi ini akan membantu Anda lebih disiplin di masa depan
+                </p>
+              </div>
+            </div>
+          </div>
         </Layout>
       </ProtectedRoute>
     );

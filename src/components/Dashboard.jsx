@@ -50,6 +50,16 @@ export default function Dashboard() {
       }
     }
   );
+
+  // Fetch stimulus control data (only for students)
+  const { data: stimulusControlData, error: stimulusControlError } = useSWR(
+    user?.role === 'student' ? '/stimulus-controls' : null,
+    {
+      onError: (error) => {
+        console.error('Stimulus control error:', error);
+      }
+    }
+  );
   console.log("STATS DATA:", statsData);
   console.log("ROLE DATA:", roleData);
 
@@ -174,10 +184,10 @@ export default function Dashboard() {
                 <p className="text-sm">Streak Kehadiran</p>
                 <p className="text-2xl font-bold">{roleData.data.personal_stats.current_streak} hari</p>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
+              {/* <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
                 <p className="text-sm">Total Poin</p>
                 <p className="text-2xl font-bold">{roleData.data.personal_stats.total_points}</p>
-              </div>
+              </div> */}
             </div>
           )}
         </motion.div>
@@ -391,6 +401,50 @@ export default function Dashboard() {
             </p>
           </motion.div>
         )}
+
+        {/* Stimulus Control Reminder - Only for students */}
+        {user?.role === 'student' && stimulusControlData?.success && (() => {
+          const controls = stimulusControlData.data;
+          const userControl = controls.find(control => control.student_id === user.student.id);
+          return userControl ? (
+            <motion.div
+              className={`col-span-1 md:col-span-2 lg:col-span-2 bg-gradient-to-br ${
+                user.student?.stimulus_control_needs_revision
+                  ? 'from-red-50 to-orange-50 border-red-200'
+                  : 'from-green-50 to-blue-50 border-green-200'
+              } rounded-2xl p-6 shadow-lg border hover:shadow-xl transition-all duration-300 cursor-pointer`}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.55, duration: 0.5 }}
+              onClick={() => router.push('/stimulus-control')}
+              whileHover={{ scale: 1.02 }}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Award className={`h-5 w-5 mr-2 ${
+                  user.student?.stimulus_control_needs_revision ? 'text-red-600' : 'text-green-600'
+                }`} />
+                Stimulus Control Reminder {
+                  user.student?.stimulus_control_needs_revision ? '🔄' : '🎯'
+                }
+              </h3>
+              <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
+                <p className="text-gray-800 italic leading-relaxed line-clamp-3">
+                  "{userControl.value}"
+                </p>
+              </div>
+              <p className={`text-sm mt-3 font-medium ${
+                user.student?.stimulus_control_needs_revision
+                  ? 'text-red-700'
+                  : 'text-green-700'
+              }`}>
+                {user.student?.stimulus_control_needs_revision
+                  ? 'Perlu direvisi karena keterlambatan kemarin'
+                  : 'Klik untuk melihat strategi kontrol stimulusmu'
+                }
+              </p>
+            </motion.div>
+          ) : null;
+        })()}
 
         {/* Role-specific content */}
         {user?.role === 'student' && roleData?.success && (
