@@ -22,8 +22,10 @@ export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
+  const [isPerlakuanDropdownOpen, setIsPerlakuanDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const settingsDropdownRef = useRef(null);
+  const perlakuanDropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -35,6 +37,12 @@ export default function Navbar() {
         !settingsDropdownRef.current.contains(event.target)
       ) {
         setIsSettingsDropdownOpen(false);
+      }
+      if (
+        perlakuanDropdownRef.current &&
+        !perlakuanDropdownRef.current.contains(event.target)
+      ) {
+        setIsPerlakuanDropdownOpen(false);
       }
     }
 
@@ -57,6 +65,18 @@ export default function Navbar() {
     const baseNav = [
       { name: "Beranda", href: "/dashboard", icon: LayoutDashboard },
       { name: "Absensi", href: "/attendance", icon: CheckCircle },
+      {
+        name: "Perlakuan",
+        href: "#",
+        icon: CheckCircle,
+        dropdown: true,
+        items: [
+          { name: "Self Monitoring", href: "/self-monitoring", icon: CheckCircle },
+          { name: "Self Contracting", href: "/self-contracting", icon: CheckCircle },
+          { name: "Stimulus Control", href: "/stimulus-control", icon: CheckCircle },
+          { name: "Self Reward", href: "/self-reward", icon: CheckCircle },
+        ],
+      },
     ];
 
     if (role === "student") {
@@ -197,16 +217,25 @@ export default function Navbar() {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   if (item.dropdown) {
+                    const isOpen = item.name === "Perlakuan" ? isPerlakuanDropdownOpen : isSettingsDropdownOpen;
+                    const setIsOpen = item.name === "Perlakuan" ? setIsPerlakuanDropdownOpen : setIsSettingsDropdownOpen;
+                    const dropdownRef = item.name === "Perlakuan" ? perlakuanDropdownRef : settingsDropdownRef;
                     return (
                       <div
                         key={item.name}
                         className="relative"
-                        ref={settingsDropdownRef}
+                        ref={dropdownRef}
                       >
                         <button
-                          onClick={() =>
-                            setIsSettingsDropdownOpen(!isSettingsDropdownOpen)
-                          }
+                          onClick={() => {
+                            if (item.name === "Perlakuan") {
+                              setIsPerlakuanDropdownOpen(!isPerlakuanDropdownOpen);
+                              setIsSettingsDropdownOpen(false);
+                            } else {
+                              setIsSettingsDropdownOpen(!isSettingsDropdownOpen);
+                              setIsPerlakuanDropdownOpen(false);
+                            }
+                          }}
                           className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium transition-colors pb-1 rounded-md ${
                             isActive
                               ? "bg-blue-100 text-blue-700 border-b-2 border-blue-500"
@@ -217,7 +246,7 @@ export default function Navbar() {
                           <span>{item.name}</span>
                           <ChevronDown className="h-3 w-3" />
                         </button>
-                        {isSettingsDropdownOpen && (
+                        {isOpen && (
                           <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-xl py-2 z-10 border border-purple-200">
                             {item.items.map((subItem) => {
                               const SubIcon = subItem.icon;
@@ -231,9 +260,7 @@ export default function Navbar() {
                                       ? "bg-purple-50 text-purple-700"
                                       : ""
                                   }`}
-                                  onClick={() =>
-                                    setIsSettingsDropdownOpen(false)
-                                  }
+                                  onClick={() => setIsOpen(false)}
                                 >
                                   <SubIcon className="h-4 w-4" />
                                   <span>{subItem.name}</span>
@@ -271,12 +298,20 @@ export default function Navbar() {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
                     if (item.dropdown) {
+                      const isOpen = item.name === "Perlakuan" ? isPerlakuanDropdownOpen : isSettingsDropdownOpen;
+                      const setIsOpen = item.name === "Perlakuan" ? setIsPerlakuanDropdownOpen : setIsSettingsDropdownOpen;
                       return (
                         <div key={item.name}>
                           <button
-                            onClick={() =>
-                              setIsSettingsDropdownOpen(!isSettingsDropdownOpen)
-                            }
+                            onClick={() => {
+                              if (item.name === "Perlakuan") {
+                                setIsPerlakuanDropdownOpen(!isPerlakuanDropdownOpen);
+                                setIsSettingsDropdownOpen(false);
+                              } else {
+                                setIsSettingsDropdownOpen(!isSettingsDropdownOpen);
+                                setIsPerlakuanDropdownOpen(false);
+                              }
+                            }}
                             className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full text-left ${
                               isActive
                                 ? "bg-blue-100 text-blue-700"
@@ -287,7 +322,7 @@ export default function Navbar() {
                             <span>{item.name}</span>
                             <ChevronDown className="h-3 w-3 ml-auto" />
                           </button>
-                          {isSettingsDropdownOpen && (
+                          {isOpen && (
                             <div className="ml-6 mt-1 space-y-1">
                               {item.items.map((subItem) => {
                                 const SubIcon = subItem.icon;
@@ -303,7 +338,7 @@ export default function Navbar() {
                                     }`}
                                     onClick={() => {
                                       setIsMobileMenuOpen(false);
-                                      setIsSettingsDropdownOpen(false);
+                                      setIsOpen(false);
                                     }}
                                   >
                                     <SubIcon className="h-4 w-4" />

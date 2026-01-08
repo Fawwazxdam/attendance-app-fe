@@ -515,12 +515,8 @@ export default function StudentDisciplinePage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.attendance_status != "absent"
-                            ? new Date(
-                                attendance.updated_at
-                              ).toLocaleTimeString("id-ID", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                            ? new Date(attendance.updated_at).getHours().toString().padStart(2, '0') + ':' +
+                              new Date(attendance.updated_at).getMinutes().toString().padStart(2, '0')
                             : "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

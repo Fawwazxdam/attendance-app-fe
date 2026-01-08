@@ -42,6 +42,10 @@ export default function AttendancePage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  const [showLateModal, setShowLateModal] = useState(false);
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [loadingLate, setLoadingLate] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
   const webcamRef = useRef(null);
 
@@ -159,6 +163,14 @@ export default function AttendancePage() {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error("Ukuran file foto terlalu besar. Maksimal 5MB.");
+        e.target.value = ""; // Reset input
+        return;
+      }
+
       setFormData({ ...formData, photo: file });
       const previewUrl = URL.createObjectURL(file);
       setPhotoPreview(previewUrl);
@@ -188,6 +200,11 @@ export default function AttendancePage() {
             const file = new File([blob], "camera-photo.jpg", {
               type: "image/jpeg",
             });
+            // Check if file has valid size
+            if (file.size === 0) {
+              toast.error("Foto kosong. Silakan coba lagi.");
+              return;
+            }
             setFormData({ ...formData, photo: file });
             setPhotoPreview(imageSrc);
             stopCamera();
@@ -199,6 +216,44 @@ export default function AttendancePage() {
       } else {
         toast.error("Gagal mengambil foto. Silakan coba lagi.");
       }
+    }
+  };
+
+  const handleLateReasonSubmit = async () => {
+    let reason = "";
+    if (selectedReason === "Lainnya") {
+      if (!customReason.trim()) {
+        toast.error("Alasan keterlambatan wajib diisi");
+        return;
+      }
+      reason = customReason.trim();
+    } else if (selectedReason) {
+      reason = selectedReason;
+    } else {
+      toast.error("Pilih alasan keterlambatan");
+      return;
+    }
+
+    setLoadingLate(true);
+
+    try {
+      await api.put(`/attendances/${attendanceData.id}`, { late_reason: reason });
+
+      // Update local attendance data with late reason
+      setAttendanceData({
+        ...attendanceData,
+        late_reason: reason,
+      });
+
+      setShowLateModal(false);
+      setShowSuccessModal(true);
+      setSelectedReason("");
+      setCustomReason("");
+    } catch (error) {
+      console.error("Error submitting late reason:", error);
+      toast.error("Gagal mengirim alasan keterlambatan");
+    } finally {
+      setLoadingLate(false);
     }
   };
 
@@ -233,6 +288,11 @@ export default function AttendancePage() {
       if (formData.photo) {
         // Pastikan formData.photo adalah File object, bukan string
         if (formData.photo instanceof File) {
+          if (formData.photo.size === 0) {
+            alert("File foto kosong. Silakan ambil atau unggah foto yang valid.");
+            setLoading(false);
+            return;
+          }
           submitData.append("images[]", formData.photo);
         } else {
           throw new Error("Invalid photo format");
@@ -260,12 +320,18 @@ export default function AttendancePage() {
       setAlreadyAttended(response.data.attendance.status !== 'absent');
       setAttendanceTime(new Date(response.data.attendance.updated_at_at));
 
-      // Set success modal data and show modal
+      // Set success modal data
       setSuccessData({
         time: new Date(response.data.attendance.updated_at),
         status: response.data.attendance.status,
       });
-      setShowSuccessModal(true);
+
+      // If status is late, show late reason modal, else show success modal
+      if (response.data.attendance.status === 'late') {
+        setShowLateModal(true);
+      } else {
+        setShowSuccessModal(true);
+      }
 
       // Clear form
       setFormData({ remarks: "", photo: null });
@@ -766,6 +832,16 @@ export default function AttendancePage() {
                             </p>
                           </div>
                         )}
+                        {attendanceData.status === 'late' && (
+                          <div className="py-2">
+                            <span className="text-gray-600 block mb-1">
+                              Alasan Keterlambatan
+                            </span>
+                            <p className="text-red-900 bg-red-50 p-3 rounded-lg border border-red-200">
+                              {attendanceData.late_reason ?? ' - '}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -862,6 +938,86 @@ export default function AttendancePage() {
             </div>
           </div>
         </div>
+
+        {/* Late Reason Modal */}
+        <Modal
+          isOpen={showLateModal}
+          onClose={() => {}} // Disable close
+          title="Alasan Keterlambatan"
+        >
+          <div className="text-center">
+            <div className="mb-6">
+              <AlertCircle className="h-16 w-16 text-red-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Status: Terlambat
+              </h3>
+              <p className="text-gray-600">
+                Silakan berikan alasan keterlambatan Anda.
+              </p>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-4">
+                Alasan Keterlambatan <span className="text-red-500">*</span>
+              </label>
+              <div className="space-y-3">
+                {["Kesiangan", "Scroll Sosmed", "Antar Adik", "Lainnya"].map((reason) => (
+                  <div key={reason} className="flex items-center">
+                    <input
+                      type="radio"
+                      id={reason}
+                      name="lateReason"
+                      value={reason}
+                      checked={selectedReason === reason}
+                      onChange={(e) => setSelectedReason(e.target.value)}
+                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
+                    />
+                    <label htmlFor={reason} className="ml-3 text-sm text-gray-700">
+                      {reason}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {selectedReason === "Lainnya" && (
+                <div className="mt-4">
+                  <textarea
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    placeholder="Jelaskan alasan Anda terlambat..."
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900"
+                    rows={3}
+                  />
+                  {selectedReason === "Lainnya" && customReason.trim() === "" && (
+                    <p className="text-red-500 text-xs mt-1">
+                      Alasan keterlambatan wajib diisi
+                    </p>
+                  )}
+                </div>
+              )}
+              {selectedReason === "" && (
+                <p className="text-red-500 text-xs mt-2">
+                  Pilih alasan keterlambatan
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleLateReasonSubmit}
+              disabled={loadingLate || selectedReason === "" || (selectedReason === "Lainnya" && customReason.trim() === "")}
+              className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 active:bg-red-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {loadingLate ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Menyimpan...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Kirim Alasan
+                </div>
+              )}
+            </button>
+          </div>
+        </Modal>
 
         {/* Success Modal */}
         <Modal
