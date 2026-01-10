@@ -52,6 +52,12 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsPerlakuanDropdownOpen(false);
+    setIsSettingsDropdownOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -336,10 +342,6 @@ export default function Navbar() {
                                         ? "bg-blue-100 text-blue-700"
                                         : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                                     }`}
-                                    onClick={() => {
-                                      setIsMobileMenuOpen(false);
-                                      setIsOpen(false);
-                                    }}
                                   >
                                     <SubIcon className="h-4 w-4" />
                                     <span>{subItem.name}</span>
@@ -360,7 +362,6 @@ export default function Navbar() {
                             ? "bg-blue-100 text-blue-700"
                             : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                         }`}
-                        onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Icon className="h-4 w-4" />
                         <span>{item.name}</span>
