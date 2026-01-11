@@ -176,24 +176,6 @@ export default function StudentDisciplinePage() {
     );
   };
 
-  const handleCompletePunishment = async (recordId) => {
-    if (
-      confirm("Apakah Anda yakin ingin menandai hukuman ini sebagai selesai?")
-    ) {
-      try {
-        await rewardPunishmentRecordsApi.update(recordId, {
-          status: "done",
-          notes: "Hukuman telah dieksekusi melalui sistem absensi",
-        });
-
-        toast.success("Hukuman berhasil ditandai selesai");
-        mutateAttendance(); // Refresh data
-      } catch (error) {
-        console.error("Error completing punishment:", error);
-        toast.error(error.message || "Gagal menandai hukuman selesai");
-      }
-    }
-  };
 
   const handlePhotoClick = (medias) => {
     console.log("Medias clicked:", medias);
@@ -448,20 +430,11 @@ export default function StudentDisciplinePage() {
                       <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Waktu Absensi
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                      {/* <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Poin Diterima
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                        Total Poin
-                      </th>
+                      </th> */}
                       <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Catatan
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                        Status Hukuman
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                        Aksi
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
                         Foto
@@ -519,7 +492,7 @@ export default function StudentDisciplinePage() {
                               new Date(attendance.updated_at).getMinutes().toString().padStart(2, '0')
                             : "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <span
                             className={`font-medium ${
                               attendance.points_earned > 0
@@ -532,70 +505,9 @@ export default function StudentDisciplinePage() {
                             {attendance.points_earned > 0 ? "+" : ""}
                             {attendance.points_earned || 0}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span
-                            className={`font-medium ${
-                              (attendance.student?.student_point
-                                ?.total_points || 0) > 0
-                                ? "text-green-600"
-                                : (attendance.student?.student_point
-                                    ?.total_points || 0) < 0
-                                ? "text-red-600"
-                                : "text-gray-600"
-                            }`}
-                          >
-                            {attendance.student?.student_point?.total_points ||
-                              (attendance.user ? "N/A" : 0)}
-                          </span>
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 text-sm text-gray-900">
                           {attendance.remarks || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {(attendance.attendance_status === "late" || attendance.attendance_status === "absent") &&
-                          attendance.punishmentRecords ? (
-                            attendance.punishmentRecords.length > 0 ? (
-                              attendance.punishmentRecords.some(
-                                (record) => record.status === "done"
-                              ) ? (
-                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                  ✓ Selesai
-                                </span>
-                              ) : (
-                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                  ⏳ Pending
-                                </span>
-                              )
-                            ) : (
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                                - Tidak Ada
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {(attendance.attendance_status === "late" || attendance.attendance_status === "absent") &&
-                            attendance.punishmentRecords &&
-                            attendance.punishmentRecords.some(
-                              (record) => record.status === "pending"
-                            ) && (
-                              <button
-                                onClick={() =>
-                                  handleCompletePunishment(
-                                    attendance.punishmentRecords.find(
-                                      (record) => record.status === "pending"
-                                    ).id
-                                  )
-                                }
-                                className="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 transform hover:scale-110"
-                                title="Tandai hukuman selesai"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </button>
-                            )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {attendance.medias && attendance.medias.length > 0 ? (

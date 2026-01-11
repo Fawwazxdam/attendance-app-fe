@@ -30,6 +30,9 @@ export default function AttendancePage() {
   const [submitted, setSubmitted] = useState(false);
   const [attendanceData, setAttendanceData] = useState(null);
   const [attendancesList, setAttendancesList] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [selectedGrade, setSelectedGrade] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [alreadyAttended, setAlreadyAttended] = useState(false);
   const [attendanceTime, setAttendanceTime] = useState(null);
   const [formData, setFormData] = useState({
@@ -47,6 +50,11 @@ export default function AttendancePage() {
   const [customReason, setCustomReason] = useState("");
   const [loadingLate, setLoadingLate] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
+  const [markingAbsent, setMarkingAbsent] = useState(false);
+  const [showAbsentModal, setShowAbsentModal] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [selectedAbsentReason, setSelectedAbsentReason] = useState("");
+  const [absentNotes, setAbsentNotes] = useState("");
   const webcamRef = useRef(null);
 
   useEffect(() => {
@@ -115,6 +123,13 @@ export default function AttendancePage() {
 
     fetchTodayAttendance();
   }, [user]);
+
+  // Set all students when attendancesList changes
+  useEffect(() => {
+    if (attendancesList.length > 0) {
+      setAllStudents(attendancesList);
+    }
+  }, [attendancesList]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -254,6 +269,51 @@ export default function AttendancePage() {
       toast.error("Gagal mengirim alasan keterlambatan");
     } finally {
       setLoadingLate(false);
+    }
+  };
+
+  const handleAbsentSubmit = async () => {
+    if (!selectedAbsentReason) {
+      toast.error("Pilih alasan ketidakhadiran");
+      return;
+    }
+
+    await handleMarkAbsent(selectedStudentId, selectedAbsentReason, absentNotes);
+
+    setShowAbsentModal(false);
+    setSelectedAbsentReason("");
+    setAbsentNotes("");
+    setSelectedStudentId(null);
+  };
+
+  const handleMarkAbsent = async (studentId, reason, notes) => {
+    setMarkingAbsent(true);
+    try {
+      // Create an absent attendance record for the student
+      const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date());
+      const remarks = `Reason: ${reason} - Notes: ${notes}`;
+      const status = reason === 'SAKIT' ? 'excused' : 'absent';
+
+      await api.post("/attendances", {
+        student_id: studentId,
+        date: today,
+        status: status,
+        remarks: remarks,
+        is_teacher_marked: true
+      });
+
+      // Refresh the attendance list
+      const response = await api.get(`/attendances?date=${today}`);
+      if (response.data.attendances) {
+        setAttendancesList(response.data.attendances);
+      }
+
+      toast.success(`Student marked as ${status === 'excused' ? 'excused' : 'absent'}`);
+    } catch (error) {
+      console.error("Error marking student absent:", error);
+      toast.error("Failed to mark student as absent");
+    } finally {
+      setMarkingAbsent(false);
     }
   };
 
@@ -503,225 +563,227 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Attendance Form */}
-              <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="bg-blue-600 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-2">
-                    Kirim Kehadiran
-                  </h2>
-                  <p className="text-blue-100">
-                    Tandai kehadiran Anda hari ini
-                  </p>
-                </div>
+            <div className={`grid grid-cols-1 ${user.role === 'student' ? 'lg:grid-cols-2' : ''} gap-8`}>
+              {/* Attendance Form - Only for Students */}
+              {user.role === 'student' && (
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="bg-blue-600 p-6">
+                    <h2 className="text-xl font-semibold text-white mb-2">
+                      Kirim Kehadiran
+                    </h2>
+                    <p className="text-blue-100">
+                      Tandai kehadiran Anda hari ini
+                    </p>
+                  </div>
 
-                {!submitted && (!alreadyAttended || (attendanceData?.status === 'absent')) ? (
-                  <form onSubmit={handleSubmit} className="p-6">
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Foto (Wajib)
-                      </label>
-                      <div className="space-y-3">
-                        {showCamera && (
-                          <div className="relative mb-4">
-                            {cameraLoading ? (
-                              <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center">
-                                <div className="text-center">
-                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                                  <p className="text-gray-600 text-sm">
-                                    Memuat kamera...
-                                  </p>
+                  {!submitted && (!alreadyAttended || (attendanceData?.status === 'absent')) ? (
+                    <form onSubmit={handleSubmit} className="p-6">
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Foto (Wajib)
+                        </label>
+                        <div className="space-y-3">
+                          {showCamera && (
+                            <div className="relative mb-4">
+                              {cameraLoading ? (
+                                <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center">
+                                  <div className="text-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                    <p className="text-gray-600 text-sm">
+                                      Memuat kamera...
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            ) : (
-                              <Webcam
-                                ref={webcamRef}
-                                audio={false}
-                                screenshotFormat="image/jpeg"
-                                videoConstraints={{
-                                  facingMode: "environment", // Try back camera first
-                                }}
-                                onUserMedia={() => {
-                                  console.log("Camera ready");
-                                  setCameraLoading(false);
-                                }}
-                                onUserMediaError={(error) => {
-                                  console.error("Webcam error:", error);
-                                  let errorMessage = "Gagal mengakses kamera. ";
-                                  if (error.name === "NotAllowedError") {
-                                    errorMessage += "Pastikan Anda memberikan izin akses kamera di browser.";
-                                  } else if (error.name === "NotFoundError") {
-                                    errorMessage += "Tidak ada kamera yang ditemukan di perangkat Anda.";
-                                  } else {
-                                    errorMessage += "Silakan coba lagi.";
-                                  }
-                                  toast.error(errorMessage);
-                                  stopCamera();
-                                }}
+                              ) : (
+                                <Webcam
+                                  ref={webcamRef}
+                                  audio={false}
+                                  screenshotFormat="image/jpeg"
+                                  videoConstraints={{
+                                    facingMode: "environment", // Try back camera first
+                                  }}
+                                  onUserMedia={() => {
+                                    console.log("Camera ready");
+                                    setCameraLoading(false);
+                                  }}
+                                  onUserMediaError={(error) => {
+                                    console.error("Webcam error:", error);
+                                    let errorMessage = "Gagal mengakses kamera. ";
+                                    if (error.name === "NotAllowedError") {
+                                      errorMessage += "Pastikan Anda memberikan izin akses kamera di browser.";
+                                    } else if (error.name === "NotFoundError") {
+                                      errorMessage += "Tidak ada kamera yang ditemukan di perangkat Anda.";
+                                    } else {
+                                      errorMessage += "Silakan coba lagi.";
+                                    }
+                                    toast.error(errorMessage);
+                                    stopCamera();
+                                  }}
+                                  className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                  style={{ transform: "scaleX(-1)" }} // Mirror effect for selfie camera
+                                />
+                              )}
+                              {!cameraLoading && (
+                                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={capturePhoto}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                                  >
+                                    Capture
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={stopCamera}
+                                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {photoPreview && !showCamera && (
+                            <div className="relative mb-4">
+                              <img
+                                src={photoPreview}
+                                alt="Preview"
                                 className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                                style={{ transform: "scaleX(-1)" }} // Mirror effect for selfie camera
                               />
-                            )}
-                            {!cameraLoading && (
-                              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                                <button
-                                  type="button"
-                                  onClick={capturePhoto}
-                                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                                >
-                                  Capture
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={stopCamera}
-                                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPhotoPreview(null);
+                                  setFormData({ ...formData, photo: null });
+                                }}
+                                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
 
-                        {photoPreview && !showCamera && (
-                          <div className="relative mb-4">
-                            <img
-                              src={photoPreview}
-                              alt="Preview"
-                              className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPhotoPreview(null);
-                                setFormData({ ...formData, photo: null });
-                              }}
-                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
-
-                        {!showCamera && (
-                          <div className="flex space-x-2">
-                            <button
-                              type="button"
-                              onClick={startCamera}
-                              className="flex-1 flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                            >
-                              <Camera className="h-5 w-5 text-gray-600 mr-2" />
-                              <span className="text-sm text-gray-700">
-                                Ambil Foto
-                              </span>
-                            </button>
-                            <label className="flex-1">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePhotoChange}
-                                className="hidden"
-                              />
-                              <div className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                <Upload className="h-5 w-5 text-gray-600 mr-2" />
+                          {!showCamera && (
+                            <div className="flex space-x-2">
+                              <button
+                                type="button"
+                                onClick={startCamera}
+                                className="flex-1 flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                              >
+                                <Camera className="h-5 w-5 text-gray-600 mr-2" />
                                 <span className="text-sm text-gray-700">
-                                  Unggah File
+                                  Ambil Foto
                                 </span>
-                              </div>
-                            </label>
+                              </button>
+                              <label className="flex-1">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handlePhotoChange}
+                                  className="hidden"
+                                />
+                                <div className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                  <Upload className="h-5 w-5 text-gray-600 mr-2" />
+                                  <span className="text-sm text-gray-700">
+                                    Unggah File
+                                  </span>
+                                </div>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Catatan <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-gray-900" />
+                          <textarea
+                            value={formData.remarks}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                remarks: e.target.value,
+                              })
+                            }
+                            placeholder="Tambahkan catatan tentang kehadiran Anda..."
+                            className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900"
+                            rows={4}
+                            required
+                          />
+                        </div>
+                        {formData.remarks.trim() === "" && (
+                          <p className="text-red-500 text-xs mt-1">
+                            Catatan wajib diisi
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={
+                          loading || !formData.photo || !formData.remarks.trim()
+                        }
+                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                      >
+                        {loading ? (
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Menyimpan...
                           </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <CheckCircle className="h-5 w-5 mr-2" />
+                            Simpan kehadiran
+                          </div>
+                        )}
+                      </button>
+                    </form>
+                  ) : alreadyAttended ? (
+                    <div className="p-6 text-center">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                        <AlertCircle className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                          {attendanceData?.status === 'absent' ? 'Status Absent - Kirim Ulang Absensi' : 'Sudah Absen Hari Ini'}
+                        </h3>
+                        {attendanceData?.status === 'absent' ? (
+                          <p className="text-yellow-700">
+                            Status Anda saat ini adalah 'absent'. Silakan kirim ulang absensi untuk mengubah status.
+                          </p>
+                        ) : (
+                          <p className="text-yellow-700">
+                            Kamu sudah absen hari ini pada jam{" "}
+                            {attendanceTime
+                              ? attendanceTime.toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "N/A"}
+                          </p>
                         )}
                       </div>
                     </div>
-
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Catatan <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-gray-900" />
-                        <textarea
-                          value={formData.remarks}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              remarks: e.target.value,
-                            })
-                          }
-                          placeholder="Tambahkan catatan tentang kehadiran Anda..."
-                          className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900"
-                          rows={4}
-                          required
-                        />
+                  ) : (
+                    <div className="p-6 text-center">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-green-900 mb-2">
+                          Jurnal kehadiran Disimpan!
+                        </h3>
+                        <p className="text-green-700">
+                          Jurnal kehadiran Anda telah dicatat dengan berhasil.
+                        </p>
                       </div>
-                      {formData.remarks.trim() === "" && (
-                        <p className="text-red-500 text-xs mt-1">
-                          Catatan wajib diisi
-                        </p>
-                      )}
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <button
-                      type="submit"
-                      disabled={
-                        loading || !formData.photo || !formData.remarks.trim()
-                      }
-                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Menyimpan...
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center">
-                          <CheckCircle className="h-5 w-5 mr-2" />
-                          Simpan kehadiran
-                        </div>
-                      )}
-                    </button>
-                  </form>
-                ) : alreadyAttended ? (
-                  <div className="p-6 text-center">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                      <AlertCircle className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-yellow-900 mb-2">
-                        {attendanceData?.status === 'absent' ? 'Status Absent - Kirim Ulang Absensi' : 'Sudah Absen Hari Ini'}
-                      </h3>
-                      {attendanceData?.status === 'absent' ? (
-                        <p className="text-yellow-700">
-                          Status Anda saat ini adalah 'absent'. Silakan kirim ulang absensi untuk mengubah status.
-                        </p>
-                      ) : (
-                        <p className="text-yellow-700">
-                          Kamu sudah absen hari ini pada jam{" "}
-                          {attendanceTime
-                            ? attendanceTime.toLocaleTimeString("id-ID", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "N/A"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-6 text-center">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                      <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-green-900 mb-2">
-                        Jurnal kehadiran Disimpan!
-                      </h3>
-                      <p className="text-green-700">
-                        Jurnal kehadiran Anda telah dicatat dengan berhasil.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Attendance Status or Info Card for Auto-generated Absent */}
-              {attendanceData && (
+              {/* Attendance Status or Info Card for Students */}
+              {user.role === 'student' && attendanceData && (
                 attendanceData.status === 'absent' && attendanceData.remarks === 'Auto-generated absent record' ? (
                   <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                     <div className="bg-purple-600 p-6">
@@ -848,38 +910,138 @@ export default function AttendancePage() {
                 )
               )}
 
-              {/* Attendance List for Admin/Teacher */}
-              {attendancesList.length > 0 && (user.role === 'administrator' || user.role === 'teacher') ? (
+              {/* All Students Attendance List for Admin/Teacher */}
+              {(user.role === 'administrator' || user.role === 'teacher') ? (
                 <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-                  <div className="bg-purple-600 p-6">
+                  <div className="bg-blue-600 p-6">
                     <h2 className="text-xl font-semibold text-white mb-2">
-                      Daftar Kehadiran Siswa
+                      Daftar Kehadiran Semua Siswa
                     </h2>
-                    <p className="text-purple-100">Status kehadiran semua siswa hari ini</p>
+                    <p className="text-blue-100">Status kehadiran lengkap semua siswa hari ini</p>
                   </div>
 
                   <div className="p-6">
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {attendancesList.map((attendance) => (
-                        <div key={attendance.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            {getStatusIcon(attendance.attendance_status || attendance.status)}
-                            <div>
-                              <p className="font-medium text-gray-900">{attendance.student?.fullname}</p>
-                              <p className="text-sm text-gray-600">{attendance.student?.grade?.name}</p>
-                            </div>
-                          </div>
-                          <div className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(attendance.attendance_status || attendance.status)}`}>
-                            {attendance.attendance_status || attendance.status}
-                          </div>
-                        </div>
-                      ))}
+                    {/* Filters */}
+                    <div className="mb-4 flex flex-col sm:flex-row gap-4">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Cari nama siswa..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="sm:w-48">
+                        <select
+                          value={selectedGrade}
+                          onChange={(e) => setSelectedGrade(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        >
+                          <option value="">Semua Kelas</option>
+                          {/* Add grade options dynamically if needed */}
+                        </select>
+                      </div>
                     </div>
+
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Siswa
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Kelas
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Aksi
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {allStudents
+                            .filter(attendance => {
+                              const matchesSearch = attendance.student?.fullname?.toLowerCase().includes(searchTerm.toLowerCase());
+                              const matchesGrade = !selectedGrade || attendance.student?.grade?.name === selectedGrade;
+                              return matchesSearch && matchesGrade;
+                            })
+                            .map((attendance) => (
+                              <tr key={attendance.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <div className="flex-shrink-0 h-10 w-10">
+                                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                        <span className="text-sm font-medium text-gray-700">
+                                          {attendance.student?.fullname?.charAt(0)?.toUpperCase()}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="ml-4">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {attendance.student?.fullname}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900">{attendance.student?.grade?.name}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(attendance.attendance_status || attendance.status)}`}>
+                                    {(() => {
+                                      const status = attendance.attendance_status || attendance.status;
+                                      const remarks = attendance.remarks || '';
+                                      if (status === 'present') return 'Hadir Tepat Waktu';
+                                      if (status === 'excused') {
+                                        if (remarks.includes('SAKIT')) return 'Izin Sakit';
+                                        return 'Hadir Toleransi';
+                                      }
+                                      if (status === 'late') return 'Terlambat';
+                                      if (status === 'absent') {
+                                        if (remarks.includes('IZIN')) return 'Izin';
+                                        if (remarks.includes('ALPHA')) return 'Alpha';
+                                        return 'Tidak Hadir';
+                                      }
+                                      return 'Belum Absen';
+                                    })()}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  {(attendance.attendance_status || attendance.status) === 'absent' && (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedStudentId(attendance.student_id);
+                                        setShowAbsentModal(true);
+                                      }}
+                                      disabled={markingAbsent}
+                                      className="bg-red-200 hover:bg-red-300 rounded-full px-2 py-1 text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {markingAbsent ? 'Memproses...' : 'Tandai Tidak Hadir'}
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {allStudents.length === 0 && (
+                      <div className="text-center py-8">
+                        <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-500">Belum ada data absensi hari ini</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
                 /* Info Card for Students */
-                !attendanceData && (
+                user.role === 'student' && !attendanceData && (
                   <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
                     <div className="bg-purple-600 p-6">
                       <h2 className="text-xl font-semibold text-white mb-2">
@@ -1075,6 +1237,87 @@ export default function AttendancePage() {
               className="mt-6 w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium"
             >
               Tutup
+            </button>
+          </div>
+        </Modal>
+
+        {/* Absent Modal */}
+        <Modal
+          isOpen={showAbsentModal}
+          onClose={() => {
+            setShowAbsentModal(false);
+            setSelectedAbsentReason("");
+            setAbsentNotes("");
+            setSelectedStudentId(null);
+          }}
+          title="Tandai Tidak Hadir"
+        >
+          <div className="text-center">
+            <div className="mb-6">
+              <AlertCircle className="h-16 w-16 text-red-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Tandai Siswa Tidak Hadir
+              </h3>
+              <p className="text-gray-600">
+                Pilih alasan ketidakhadiran dan tambahkan catatan jika diperlukan.
+              </p>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-4">
+                Alasan Ketidakhadiran <span className="text-red-500">*</span>
+              </label>
+              <div className="space-y-3">
+                {["IZIN", "SAKIT", "ALPHA"].map((reason) => (
+                  <div key={reason} className="flex items-center">
+                    <input
+                      type="radio"
+                      id={reason}
+                      name="absentReason"
+                      value={reason}
+                      checked={selectedAbsentReason === reason}
+                      onChange={(e) => setSelectedAbsentReason(e.target.value)}
+                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
+                    />
+                    <label htmlFor={reason} className="ml-3 text-sm text-gray-700">
+                      {reason}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {selectedAbsentReason === "" && (
+                <p className="text-red-500 text-xs mt-2">
+                  Pilih alasan ketidakhadiran
+                </p>
+              )}
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Keterangan
+              </label>
+              <textarea
+                value={absentNotes}
+                onChange={(e) => setAbsentNotes(e.target.value)}
+                placeholder="Tambahkan keterangan tambahan..."
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 resize-none text-gray-900"
+                rows={3}
+              />
+            </div>
+            <button
+              onClick={handleAbsentSubmit}
+              disabled={markingAbsent || selectedAbsentReason === ""}
+              className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 active:bg-red-800 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {markingAbsent ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Menyimpan...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Tandai Tidak Hadir
+                </div>
+              )}
             </button>
           </div>
         </Modal>

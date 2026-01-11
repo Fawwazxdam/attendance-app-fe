@@ -182,6 +182,7 @@ export default function Dashboard() {
             <div className="mt-4 flex items-center space-x-4">
               <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
                 <p className="text-sm">Streak Kehadiran</p>
+                {/* <p className="text-2xl font-bold">{roleData.data.personal_stats.current_streak} hari</p> */}
                 <p className="text-2xl font-bold">{roleData.data.personal_stats.current_streak} hari</p>
               </div>
               {/* <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
@@ -303,34 +304,9 @@ export default function Dashboard() {
               Trend Kehadiran 7 Hari Terakhir
             </h3>
             <div className="mb-4 text-center">
-                  {(() => {
-                    const totalPoints = roleData?.data?.personal_stats?.total_points || 0;
-                    if (totalPoints >= 15) {
-                      return (
-                        <p className="text-green-600 font-medium">
-                          🌿 Hebat! Disiplinmu keren banget, pertahankan ya! 💪
-                        </p>
-                      );
-                    } else if (totalPoints >= 5) {
-                      return (
-                        <p className="text-blue-600 font-medium">
-                          🎗️ Mantap! Udah bagus, tinggal lebih konsisten aja 😊
-                        </p>
-                      );
-                    } else if (totalPoints <= -10) {
-                      return (
-                        <p className="text-red-600 font-medium">
-                          🚨 Semangat! Yuk perbaiki besok biar makin disiplin 💪
-                        </p>
-                      );
-                    } else {
-                      return (
-                        <p className="text-gray-600 font-medium">
-                          📈 Tetap semangat! Setiap hari adalah kesempatan untuk menjadi lebih baik.
-                        </p>
-                      );
-                    }
-                  })()}
+              <p className="text-blue-600 font-medium">
+                📈 Tetap semangat! Setiap hari adalah kesempatan untuk menjadi lebih baik.
+              </p>
             </div>
             {studentChartData?.success ? (
               <div className="h-64 text-black">
@@ -496,7 +472,6 @@ export default function Dashboard() {
                       {record.status === 'present' ? 'Hadir' :
                        record.status === 'late' ? 'Terlambat' : 'Tidak Hadir'}
                     </span>
-                    <p className="text-xs text-gray-500 mt-1">+{record.points} poin</p>
                   </div>
                 </motion.div>
               ))}

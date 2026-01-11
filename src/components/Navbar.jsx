@@ -85,17 +85,17 @@ export default function Navbar() {
       },
     ];
 
-    if (role === "student") {
-      return [
-        ...baseNav,
-        { name: "Aturan", href: "/reward-punishment-rules", icon: CheckCircle },
-      ];
-    }
+    // if (role === "student") {
+    //   return [
+    //     ...baseNav,
+    //     { name: "Aturan", href: "/reward-punishment-rules", icon: CheckCircle },
+    //   ];
+    // }
 
     if (role === "teacher") {
       return [
         ...baseNav,
-        { name: "Aturan", href: "/reward-punishment-rules", icon: CheckCircle },
+        // { name: "Aturan", href: "/reward-punishment-rules", icon: CheckCircle },
         {
           name: "Pengaturan",
           href: "#",
@@ -130,7 +130,7 @@ export default function Navbar() {
           href: "/student-discipline",
           icon: CheckCircle,
         },
-        { name: "Aturan", href: "/reward-punishment-rules", icon: CheckCircle },
+        // { name: "Aturan", href: "/reward-punishment-rules", icon: CheckCircle },
       ];
     }
 
