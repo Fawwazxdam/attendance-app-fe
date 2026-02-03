@@ -222,10 +222,10 @@ export default function StudentsPage() {
                 render: (student) => getGradeName(student.grade_id),
               },
               { header: "Nomor Telepon", key: "phone_number" },
-              {
-                header: "Poin",
-                render: (student) => student.student_point?.total_points || 0,
-              },
+              // {
+              //   header: "Poin",
+              //   render: (student) => student.student_point?.total_points || 0,
+              // },
               { header: "Gambar", key: "image" },
             ]}
             data={students}
